@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Compose用に定義。汎用のpadding -->
+    <dimen name="padding_extra_small">4dp</dimen>
+    <dimen name="padding_small">8dp</dimen>
+    <dimen name="padding_medium">16dp</dimen>
+    <dimen name="padding_large">32dp</dimen>
+
+    <dimen name="icon_medium">28dp</dimen>
+
+    <dimen name="search_result_image_size">80dp</dimen>
+
+    <!-- Progress indicator -->
+    <dimen name="circular_progress_indicator_size">64dp</dimen>
+    <dimen name="circular_progress_indicator_stroke_width">6dp</dimen>
+</resources>
