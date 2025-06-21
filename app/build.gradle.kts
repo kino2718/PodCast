@@ -72,6 +72,7 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     // serialization
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.xmlutil.serialization)
     // その他
     implementation(libs.okhttp)
     implementation(libs.coil.compose)
