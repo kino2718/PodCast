@@ -4,7 +4,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import net.kino2718.podcast.ui.start.StartScreen
 import net.kino2718.podcast.ui.theme.PodCastTheme
 
 class MainActivity : ComponentActivity() {
@@ -13,7 +12,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             PodCastTheme {
-                StartScreen()
+                MainScreen()
             }
         }
     }
