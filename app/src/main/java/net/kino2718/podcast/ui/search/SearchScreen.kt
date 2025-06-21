@@ -1,5 +1,6 @@
 package net.kino2718.podcast.ui.search
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -37,6 +38,7 @@ private const val TAG = "SearchScreen"
 
 @Composable
 fun SearchScreen(
+    select: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SearchViewModel = viewModel()
 ) {
@@ -77,7 +79,8 @@ fun SearchScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(dimensionResource(R.dimen.padding_small)),
+                            .padding(dimensionResource(R.dimen.padding_small))
+                            .clickable { select(it.feedUrl) },
                         horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.padding_small)),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {

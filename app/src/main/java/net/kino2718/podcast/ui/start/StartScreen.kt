@@ -18,6 +18,7 @@ import net.kino2718.podcast.ui.search.SearchScreen
 
 @Composable
 fun StartScreen(
+    select: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var current by rememberSaveable { mutableStateOf(NavItem.HOME) }
@@ -44,8 +45,10 @@ fun StartScreen(
     ) { innerPadding ->
         when (current) {
             NavItem.HOME -> HomeScreen(Modifier.padding(innerPadding))
-            NavItem.SEARCH -> SearchScreen(Modifier.padding(innerPadding))
+            NavItem.SEARCH -> SearchScreen(
+                select = select,
+                Modifier.padding(innerPadding),
+            )
         }
     }
-
 }
