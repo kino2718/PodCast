@@ -1,4 +1,4 @@
-package net.kino2718.podcast.ui.main
+package net.kino2718.podcast.ui.start
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -17,7 +17,7 @@ import net.kino2718.podcast.ui.home.HomeScreen
 import net.kino2718.podcast.ui.search.SearchScreen
 
 @Composable
-fun MainScreen(
+fun StartScreen(
     modifier: Modifier = Modifier,
 ) {
     var current by rememberSaveable { mutableStateOf(NavItem.HOME) }
