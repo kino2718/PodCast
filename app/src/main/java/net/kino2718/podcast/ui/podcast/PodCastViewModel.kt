@@ -9,7 +9,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import net.kino2718.podcast.data.Item
 import net.kino2718.podcast.data.PChannel
+import net.kino2718.podcast.data.PlayItem
 import net.kino2718.podcast.data.PodCast
+import net.kino2718.podcast.data.Repository
 import net.kino2718.podcast.ui.utils.hmsToSeconds
 import net.kino2718.podcast.ui.utils.parseToInstant
 import net.kino2718.podcast.utils.MyLog
@@ -25,6 +27,8 @@ data class PodCastUIState(
 )
 
 class PodCastViewModel(app: Application) : AndroidViewModel(app) {
+    private val repo = Repository(app)
+
     private val _uiState = MutableStateFlow<PodCastUIState?>(null)
     val uiState = _uiState.asStateFlow()
 
@@ -155,6 +159,13 @@ class PodCastViewModel(app: Application) : AndroidViewModel(app) {
         } catch (e: Exception) {
             MyLog.e(TAG, "parse error: $e")
             null
+        }
+    }
+
+    fun addPlayItem(channel: PChannel, item: Item) {
+        viewModelScope.launch {
+            val playItem = PlayItem(channel = channel, item = item)
+            repo.addPlayItem(playItem)
         }
     }
 
