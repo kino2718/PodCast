@@ -2,10 +2,12 @@ package net.kino2718.podcast.data
 
 import androidx.room.Entity
 import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import kotlinx.datetime.Instant
 
 @Entity(
+    indices = [Index(value = ["guid"], unique = true)],
     foreignKeys = [
         ForeignKey(
             entity = PChannel::class,
