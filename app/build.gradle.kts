@@ -72,6 +72,11 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     // serialization
     implementation(libs.kotlinx.serialization.json)
+    // media3
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.ui)
+    implementation(libs.androidx.media3.common)
+    implementation(libs.androidx.media3.session)
     // その他
     implementation(libs.okhttp)
     implementation(libs.coil.compose)
