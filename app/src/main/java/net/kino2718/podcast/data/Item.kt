@@ -19,6 +19,7 @@ data class Item(
     @PrimaryKey(autoGenerate = true) val id: Long = 0L,
     val channelId: Long = 0L,
     // 以下はrssから取得。ローカルに保存しておく情報。netにアクセスする度に書き換えられる
+    val guid: String = "",
     val url: String = "", // audio. enclosure urlから
     val title: String = "",
     val author: String = "",

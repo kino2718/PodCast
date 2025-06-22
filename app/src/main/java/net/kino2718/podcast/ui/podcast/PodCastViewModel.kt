@@ -79,6 +79,13 @@ class PodCastViewModel(app: Application) : AndroidViewModel(app) {
                                 currentItem = Item()
                             }
 
+                            "guid" -> {
+                                if (inItem) {
+                                    val text = parser.nextText()
+                                    currentItem = currentItem.copy(guid = text)
+                                }
+                            }
+
                             "title" -> {
                                 val text = parser.nextText()
                                 if (inItem) currentItem = currentItem.copy(title = text)
