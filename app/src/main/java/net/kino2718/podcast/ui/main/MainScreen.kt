@@ -1,46 +1,67 @@
 package net.kino2718.podcast.ui.main
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Card
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import coil.compose.AsyncImage
+import net.kino2718.podcast.R
+import net.kino2718.podcast.data.PlayItem
 import net.kino2718.podcast.ui.podcast.PodCastScreen
 import net.kino2718.podcast.ui.start.StartScreen
 
 @Composable
 fun MainScreen(
     modifier: Modifier = Modifier,
+    viewModel: MainViewModel = viewModel(),
 ) {
     var current by rememberSaveable { mutableStateOf(NavItem.HOME) }
-
+    val playList by viewModel.playListFlow.collectAsState()
     Scaffold(
         modifier = modifier.fillMaxSize(),
         bottomBar = {
-            NavigationBar {
-                NavItem.entries.forEach { item ->
-                    NavigationBarItem(
-                        selected = current == item,
-                        onClick = { current = item },
-                        icon = {
-                            androidx.compose.material3.Icon(
-                                imageVector = item.icon,
-                                contentDescription = item.label
-                            )
-                        },
-                        label = { Text(item.label) }
-                    )
+            Column {
+                if (playList.isNotEmpty()) {
+                    Control(playList)
+                }
+                NavigationBar {
+                    NavItem.entries.forEach { item ->
+                        NavigationBarItem(
+                            selected = current == item,
+                            onClick = { current = item },
+                            icon = {
+                                androidx.compose.material3.Icon(
+                                    imageVector = item.icon,
+                                    contentDescription = item.label
+                                )
+                            },
+                            label = { Text(item.label) }
+                        )
+                    }
                 }
             }
         }
@@ -63,6 +84,51 @@ fun MainScreen(
             composable<PodCastDestination> { navBackStackEntry ->
                 val podCastDestination = navBackStackEntry.toRoute<PodCastDestination>()
                 PodCastScreen(podCastDestination.feedUrl)
+            }
+        }
+    }
+}
+
+@Composable
+fun Control(
+    playList: List<PlayItem>,
+    modifier: Modifier = Modifier,
+) {
+    if (playList.isEmpty()) return
+    val playItem = playList[0]
+    val channel = playItem.channel
+    val item = playItem.item
+
+    Card(
+        modifier = modifier.padding(vertical = dimensionResource(R.dimen.padding_extra_small))
+    ) {
+        Row(
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(dimensionResource(R.dimen.padding_small)),
+            horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.padding_small)),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // httpだと表示されないため
+            val imageUrl = item.imageUrl?.replaceFirst("http://", "https://")
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = null,
+                modifier = Modifier.size(dimensionResource(R.dimen.item_image_size))
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = item.title,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Text(
+                    text = channel.title,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.titleMedium,
+                )
             }
         }
     }
