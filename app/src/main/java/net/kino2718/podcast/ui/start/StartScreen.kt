@@ -9,10 +9,14 @@ import net.kino2718.podcast.ui.search.SearchScreen
 @Composable
 fun StartScreen(
     navItem: NavItem,
+    select: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     when (navItem) {
         NavItem.HOME -> HomeScreen(modifier = modifier)
-        NavItem.SEARCH -> SearchScreen(modifier = modifier)
+        NavItem.SEARCH -> SearchScreen(
+            select = select,
+            modifier = modifier
+        )
     }
 }
