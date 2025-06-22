@@ -6,6 +6,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import net.kino2718.podcast.ui.now.NowScreen
 import net.kino2718.podcast.ui.podcast.PodCastScreen
 import net.kino2718.podcast.ui.start.StartScreen
 
@@ -29,7 +30,19 @@ fun MainScreen(
         }
         composable<PodCastDestination> { navBackStackEntry ->
             val podCastDestination = navBackStackEntry.toRoute<PodCastDestination>()
-            PodCastScreen(podCastDestination.feedUrl)
+            PodCastScreen(
+                podCastDestination.feedUrl,
+                selectItem = {
+                    val nowDestination = NowDestination(item = it)
+                    navController.navigate(nowDestination)
+                }
+            )
+        }
+        composable<NowDestination> { navBackStackEntry ->
+            val nowDestination = navBackStackEntry.toRoute<NowDestination>()
+            NowScreen(
+                item = nowDestination.item,
+            )
         }
     }
 }

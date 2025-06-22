@@ -1,5 +1,6 @@
 package net.kino2718.podcast.ui.podcast
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -33,6 +34,7 @@ import net.kino2718.podcast.utils.MyLog
 @Composable
 fun PodCastScreen(
     feedUrl: String,
+    selectItem: (Item) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: PodCastViewModel = viewModel()
 ) {
@@ -51,7 +53,10 @@ fun PodCastScreen(
         ) {
             uiState?.let {
                 Channel(uiState = it)
-                ItemList(uiState = it)
+                ItemList(
+                    uiState = it,
+                    selectItem = selectItem,
+                    )
             }
         }
     }
@@ -113,6 +118,7 @@ private fun Channel(
 @Composable
 private fun ItemList(
     uiState: PodCastUIState,
+    selectItem: (Item) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -123,7 +129,10 @@ private fun ItemList(
             else it
         }
         items(items) { item ->
-            Item(item)
+            Item(
+                item = item,
+                selectItem = selectItem,
+            )
         }
     }
 }
@@ -131,6 +140,7 @@ private fun ItemList(
 @Composable
 private fun Item(
     item: Item,
+    selectItem: (Item) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Card(
@@ -139,7 +149,10 @@ private fun Item(
         Row(
             modifier = modifier
                 .fillMaxWidth()
-                .padding(dimensionResource(R.dimen.padding_small)),
+                .padding(dimensionResource(R.dimen.padding_small))
+                .clickable {
+                    selectItem(item)
+                },
             horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.padding_small)),
             verticalAlignment = Alignment.CenterVertically,
         ) {
