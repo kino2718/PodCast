@@ -13,8 +13,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import net.kino2718.podcast.ui.NavItem
-import net.kino2718.podcast.ui.home.HomeScreen
-import net.kino2718.podcast.ui.search.SearchScreen
+import net.kino2718.podcast.ui.start.StartScreen
 
 @Composable
 fun MainScreen(
@@ -42,10 +41,9 @@ fun MainScreen(
             }
         }
     ) { innerPadding ->
-        when (current) {
-            NavItem.HOME -> HomeScreen(Modifier.padding(innerPadding))
-            NavItem.SEARCH -> SearchScreen(Modifier.padding(innerPadding))
-        }
+        StartScreen(
+            navItem = current,
+            modifier = Modifier.padding(innerPadding)
+        )
     }
-
 }
