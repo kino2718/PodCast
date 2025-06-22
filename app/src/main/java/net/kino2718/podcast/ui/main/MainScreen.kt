@@ -12,7 +12,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import net.kino2718.podcast.ui.NavItem
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import net.kino2718.podcast.ui.start.StartScreen
 
 @Composable
@@ -41,9 +43,17 @@ fun MainScreen(
             }
         }
     ) { innerPadding ->
-        StartScreen(
-            navItem = current,
-            modifier = Modifier.padding(innerPadding)
-        )
+        val navController = rememberNavController()
+        NavHost(
+            navController = navController,
+            startDestination = StartDestination,
+            modifier = Modifier.padding(innerPadding),
+        ) {
+            composable<StartDestination> {
+                StartScreen(
+                    navItem = current,
+                )
+            }
+        }
     }
 }
