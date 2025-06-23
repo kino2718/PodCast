@@ -74,11 +74,13 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     // media3
     implementation(libs.androidx.media3.exoplayer)
-    implementation(libs.androidx.media3.ui)
     implementation(libs.androidx.media3.common)
     implementation(libs.androidx.media3.session)
+    implementation(libs.androidx.media3.ui)
+    implementation(libs.androidx.media3.ui.compose)
     // その他
     implementation(libs.okhttp)
     implementation(libs.coil.compose)
     implementation(libs.kotlinx.datetime)
+    implementation(libs.kotlinx.coroutines.guava)
 }

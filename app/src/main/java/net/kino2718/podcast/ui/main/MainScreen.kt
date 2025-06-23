@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.media3.common.Player
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -31,6 +32,7 @@ import androidx.navigation.toRoute
 import coil.compose.AsyncImage
 import net.kino2718.podcast.R
 import net.kino2718.podcast.data.PlayItem
+import net.kino2718.podcast.ui.player.AudioPlayer
 import net.kino2718.podcast.ui.podcast.PodCastScreen
 import net.kino2718.podcast.ui.start.StartScreen
 
@@ -40,13 +42,15 @@ fun MainScreen(
     viewModel: MainViewModel = viewModel(),
 ) {
     var current by rememberSaveable { mutableStateOf(NavItem.HOME) }
-    val playList by viewModel.playListFlow.collectAsState()
+    val playItem by viewModel.playItemFlow.collectAsState()
+    val player by viewModel.audioPlayerFlow.collectAsState()
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         bottomBar = {
             Column {
-                if (playList.isNotEmpty()) {
-                    Control(playList)
+                playItem?.let { item ->
+                    player?.let { Control(player = it, playItem = item) }
                 }
                 NavigationBar {
                     NavItem.entries.forEach { item ->
@@ -91,11 +95,10 @@ fun MainScreen(
 
 @Composable
 fun Control(
-    playList: List<PlayItem>,
+    player: Player,
+    playItem: PlayItem,
     modifier: Modifier = Modifier,
 ) {
-    if (playList.isEmpty()) return
-    val playItem = playList[0]
     val channel = playItem.channel
     val item = playItem.item
 
@@ -131,5 +134,11 @@ fun Control(
                 )
             }
         }
+        AudioPlayer(
+            player = player,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(dimensionResource(R.dimen.padding_small)),
+        )
     }
 }

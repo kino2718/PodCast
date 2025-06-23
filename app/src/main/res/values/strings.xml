@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">PodCast</string>
+
+    <!-- player -->
+    <string name="play_pause_button_play" translatable="false">Play</string>
+    <string name="play_pause_button_pause" translatable="false">Pause</string>
+    <string name="seek_back_button" translatable="false">Seek back</string>
+    <string name="seek_forward_button" translatable="false">Seek forward</string>
 </resources>
