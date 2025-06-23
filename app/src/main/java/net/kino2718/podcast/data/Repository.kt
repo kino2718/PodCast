@@ -4,7 +4,7 @@ import android.content.Context
 import net.kino2718.podcast.db.PodCastDatabase
 
 class Repository(context: Context) {
-    val podCastDao = PodCastDatabase.getInstance(context).podCastDao()
+    private val podCastDao = PodCastDatabase.getInstance(context).podCastDao()
 
     suspend fun addPlayItem(playItem: PlayItem): PlayItem {
         // ToDo: 今のところplay listはitem1つのみとする。そのうち複数のplay listをサポートする。
@@ -14,5 +14,9 @@ class Repository(context: Context) {
 
     private suspend fun deleteAllPlayItem() = podCastDao.deleteAllPlayItems()
 
-    fun getPlayListFlow() = podCastDao.getPlayListFlow()
+    fun getChannelByIdFlow(id: Long) = podCastDao.getChannelByIdFlow(id)
+    fun getItemByIdFlow(id: Long) = podCastDao.getItemByIdFlow(id)
+    suspend fun getItemById(id: Long) = podCastDao.getItemById(id)
+    fun getAllPlayItemIdsFlow() = podCastDao.getAllPlayItemIdsFlow()
+    suspend fun updateItem(item: Item) = podCastDao.updateItem(item)
 }

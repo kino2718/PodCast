@@ -3,13 +3,13 @@ package net.kino2718.podcast.db
 import androidx.room.Dao
 import androidx.room.Query
 import androidx.room.Transaction
+import androidx.room.Update
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 import net.kino2718.podcast.data.Item
 import net.kino2718.podcast.data.PChannel
 import net.kino2718.podcast.data.PlayItem
-import net.kino2718.podcast.data.PlayListTableItem
+import net.kino2718.podcast.data.PlayItemId
 
 @Dao
 interface PodCastDao {
@@ -23,7 +23,7 @@ interface PodCastDao {
     }
 
     @Query("select * from PChannel where id = :id")
-    suspend fun getChannelById(id: Long): PChannel?
+    fun getChannelByIdFlow(id: Long): Flow<PChannel>
 
     @Query("select * from PChannel where feedUrl = :feedUrl")
     suspend fun getChannelByFeedUrl(feedUrl: String): PChannel?
@@ -37,6 +37,12 @@ interface PodCastDao {
         return if (0 < id) id else prevId
     }
 
+    @Update
+    suspend fun updateItem(item: Item)
+
+    @Query("select * from Item where id = :id")
+    fun getItemByIdFlow(id: Long): Flow<Item>
+
     @Query("select * from Item where id = :id")
     suspend fun getItemById(id: Long): Item?
 
@@ -44,19 +50,19 @@ interface PodCastDao {
     suspend fun getItemByGuid(guid: String): Item?
 
     @Upsert
-    suspend fun upsertPlayListTableItem(item: PlayListTableItem): Long
+    suspend fun upsertPlayItemId(item: PlayItemId): Long
 
-    suspend fun safeUpsertPlayListTableItem(item: PlayListTableItem): Long {
+    suspend fun safeUpsertPlayItemId(item: PlayItemId): Long {
         val prevId = item.id
-        val id = upsertPlayListTableItem(item)
+        val id = upsertPlayItemId(item)
         return if (0 < id) id else prevId
     }
 
-    @Query("delete from PlayListTableItem")
+    @Query("delete from PlayItemId")
     suspend fun deleteAllPlayItems()
 
-    @Query("select * from PlayListTableItem")
-    fun getAllPlayListTableItemFlow(): Flow<List<PlayListTableItem>>
+    @Query("select * from PlayItemId")
+    fun getAllPlayItemIdsFlow(): Flow<List<PlayItemId>>
 
     @Transaction
     suspend fun addPlayItem(playItem: PlayItem): PlayItem {
@@ -72,31 +78,18 @@ interface PodCastDao {
         val item1 = playItem.item
         // guidで既に登録されているかを調べる。
         val item2 = getItemByGuid(item1.guid)
-        // 登録されていたらidだけ取得する。そうでなければそのまま。
-        val item3 = item2?.let { item1.copy(id = it.id) } ?: item1
+        // 登録されていたらid, playbackPositionを取得する。そうでなければそのまま。
+        val item3 =
+            item2?.let { item1.copy(id = it.id, playbackPosition = it.playbackPosition) } ?: item1
         // channelIdをコピーする。
         val item4 = item3.copy(channelId = channelId)
         // 登録されていたらid以外は新しいデータで置き換える。そうでなければそのまま。
         val itemId = safeUpsertItem(item4)
         val item = playItem.item.copy(id = itemId)
 
-        val playListTableItem = PlayListTableItem(channelId = channelId, itemId = itemId)
-        safeUpsertPlayListTableItem(playListTableItem)
+        val playItemId = PlayItemId(channelId = channelId, itemId = itemId)
+        safeUpsertPlayItemId(playItemId)
 
         return PlayItem(channel = channel, item = item)
-    }
-
-    fun getPlayListFlow(): Flow<List<PlayItem>> {
-        return getAllPlayListTableItemFlow().map { list ->
-            list.mapNotNull { ti ->
-                val channel = getChannelById(ti.channelId)
-                val item = getItemById(ti.itemId)
-                channel?.let { c ->
-                    item?.let { i ->
-                        PlayItem(channel = c, item = i, lastPlay = ti.lastPlay)
-                    }
-                }
-            }
-        }
     }
 }

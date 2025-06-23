@@ -35,6 +35,7 @@ import net.kino2718.podcast.data.PlayItem
 import net.kino2718.podcast.ui.player.AudioPlayer
 import net.kino2718.podcast.ui.podcast.PodCastScreen
 import net.kino2718.podcast.ui.start.StartScreen
+import net.kino2718.podcast.ui.utils.toHMS
 
 @Composable
 fun MainScreen(
@@ -130,6 +131,13 @@ fun Control(
                     text = channel.title,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                val playbackPosition = item.playbackPosition.toHMS()
+                val duration = item.duration.toHMS()
+                val pos = "$playbackPosition/$duration"
+                Text(
+                    text = pos,
                     style = MaterialTheme.typography.titleMedium,
                 )
             }

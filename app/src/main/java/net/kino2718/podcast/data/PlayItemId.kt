@@ -20,7 +20,7 @@ import androidx.room.PrimaryKey
         )
     ]
 )
-data class PlayListTableItem(
+data class PlayItemId(
     @PrimaryKey(autoGenerate = true) val id: Long = 0L,
     val channelId: Long = 0L,
     val itemId: Long = 0L,

@@ -48,7 +48,9 @@ fun Instant.format(timeZone: TimeZone = TimeZone.currentSystemDefault()): String
 
 fun Long.toHMS(): String {
     // 負の時間が入ってきた時は0にする。
-    var seconds = if (0 <= this) this else 0
+    val millis = if (0 <= this) this else 0
+    // 秒に変換
+    var seconds = millis / 1000L
 
     val sb = StringBuilder()
     // 時は1以上の場合のみ表示する。

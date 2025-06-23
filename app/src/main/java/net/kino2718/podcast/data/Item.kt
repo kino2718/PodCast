@@ -29,8 +29,8 @@ data class Item(
     val link: String = "", // web site
     val imageUrl: String? = null,
     val pubDate: Instant? = null,
-    val duration: Long = 0L,// itunes:durationから
+    val duration: Long = 0L,// itunes:durationから milli sec
     // 以下は再生状態
-    val playbackPosition: Long = 0L,
+    val playbackPosition: Long = 0L, // milli sec
     val isPlaybackCompleted: Boolean = false,
 )

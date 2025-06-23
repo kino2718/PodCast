@@ -136,7 +136,7 @@ class PodCastViewModel(app: Application) : AndroidViewModel(app) {
 
                             "itunes:duration" -> {
                                 if (inItem) {
-                                    val d = parser.nextText().hmsToSeconds()
+                                    val d = parser.nextText().hmsToSeconds() * 1000L
                                     currentItem = currentItem.copy(duration = d)
                                 }
                             }
