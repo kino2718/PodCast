@@ -19,4 +19,5 @@ class Repository(context: Context) {
     suspend fun getItemById(id: Long) = podCastDao.getItemById(id)
     fun getAllPlayItemIdsFlow() = podCastDao.getAllPlayItemIdsFlow()
     suspend fun updateItem(item: Item) = podCastDao.updateItem(item)
+    fun getPodCastFlowByFeedUrl(feedUrl: String) = podCastDao.getPodCastFlowByFeedUrl(feedUrl)
 }

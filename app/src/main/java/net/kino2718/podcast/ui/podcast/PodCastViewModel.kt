@@ -4,8 +4,12 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import net.kino2718.podcast.data.Item
 import net.kino2718.podcast.data.PChannel
@@ -29,8 +33,32 @@ data class PodCastUIState(
 class PodCastViewModel(app: Application) : AndroidViewModel(app) {
     private val repo = Repository(app)
 
-    private val _uiState = MutableStateFlow<PodCastUIState?>(null)
-    val uiState = _uiState.asStateFlow()
+    private val podCastFlowFromSearch = MutableSharedFlow<PodCast>()
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val uiState = podCastFlowFromSearch.flatMapLatest { fromSearch ->
+        // dbからこのpodcastのflowを取得する。itemListの数は聴いたことのあるものだけ
+        repo.getPodCastFlowByFeedUrl(fromSearch.channel.feedUrl).map { fromDb ->
+            // dbにはこのpodcastは登録されていない。
+            if (fromDb == null) return@map PodCastUIState(fromSearch)
+
+            // dbからのitemのplaybackPositionとdurationをコピーする。
+            val itemListFromSearch = fromSearch.itemList
+            val itemListFromDb = fromDb.itemList
+            val newItemList = itemListFromSearch.map { itemFromSearch ->
+                itemListFromDb.find { itemFromDb -> itemFromSearch.guid == itemFromDb.guid }
+                    ?.let { foundItem ->
+                        itemFromSearch.copy(
+                            playbackPosition = foundItem.playbackPosition,
+                            duration = foundItem.duration
+                        )
+                    } ?: itemFromSearch
+            }
+            PodCastUIState(
+                fromSearch.copy(channel = fromSearch.channel, itemList = newItemList)
+            )
+        }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     fun load(feedUrl: String) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -53,7 +81,7 @@ class PodCastViewModel(app: Application) : AndroidViewModel(app) {
                                 TAG,
                                 "channel = ${podCast.channel}, item = ${podCast.itemList[0]}"
                             )
-                            _uiState.value = PodCastUIState(podCast)
+                            podCastFlowFromSearch.emit(podCast)
                         }
                     }
                 }

@@ -10,6 +10,7 @@ import net.kino2718.podcast.data.Item
 import net.kino2718.podcast.data.PChannel
 import net.kino2718.podcast.data.PlayItem
 import net.kino2718.podcast.data.PlayItemId
+import net.kino2718.podcast.data.PodCast
 
 @Dao
 interface PodCastDao {
@@ -92,4 +93,7 @@ interface PodCastDao {
 
         return PlayItem(channel = channel, item = item)
     }
+
+    @Query("select * from PChannel where feedUrl = :feedUrl")
+    fun getPodCastFlowByFeedUrl(feedUrl: String): Flow<PodCast?>
 }

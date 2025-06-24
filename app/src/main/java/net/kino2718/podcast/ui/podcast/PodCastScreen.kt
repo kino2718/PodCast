@@ -21,6 +21,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
@@ -29,6 +30,7 @@ import net.kino2718.podcast.data.Item
 import net.kino2718.podcast.ui.utils.format
 import net.kino2718.podcast.ui.utils.toHMS
 import net.kino2718.podcast.utils.MyLog
+import kotlin.math.abs
 
 @Composable
 fun PodCastScreen(
@@ -104,7 +106,7 @@ private fun Channel(
         Text(
             text = channel.description,
             modifier = Modifier.padding(dimensionResource(R.dimen.padding_small)),
-            maxLines = 10,
+            maxLines = 5,
             overflow = TextOverflow.Ellipsis,
             style = MaterialTheme.typography.bodyMedium,
         )
@@ -171,8 +173,15 @@ private fun Item(
                         )
                     }
                     Spacer(modifier = Modifier.weight(1f))
+
+                    val t = if (item.playbackPosition == 0L)
+                        item.duration.toHMS()
+                    else if (abs(item.duration - item.playbackPosition) < 2000L)
+                        stringResource(R.string.playback_done)
+                    else
+                        "${item.playbackPosition.toHMS()}/${item.duration.toHMS()}"
                     Text(
-                        text = item.duration.toHMS(),
+                        text = t,
                         style = MaterialTheme.typography.titleSmall,
                     )
                 }
