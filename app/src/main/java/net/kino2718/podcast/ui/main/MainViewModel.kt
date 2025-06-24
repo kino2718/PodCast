@@ -27,6 +27,7 @@ import net.kino2718.podcast.service.PlaybackService
 import net.kino2718.podcast.ui.utils.ObservePlaybackPosition
 import net.kino2718.podcast.utils.MyLog
 import kotlin.math.abs
+import kotlin.math.max
 
 class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val appContext = app.applicationContext
@@ -62,8 +63,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             combine(audioPlayerFlow, playItemIdFlow) { player, playItemId ->
                 MyLog.d(TAG, "player: $player, playItem: $playItemId")
                 val item = repo.getItemById(playItemId.itemId)
-                if (player != null && item != null)
-                    setMediaItem(player, item.url, item.playbackPosition)
+                if (player != null && item != null) {
+                    // posの値はdurationよりある程度小さくしないとExoPlayerから返ってくるdurationの値が異常に小さくなる
+                    val pos = item.playbackPosition.coerceIn(0L, max(0L, item.duration - 100L))
+                    setMediaItem(player, item.url, pos)
+                }
                 Unit
             }.collect {}
         }
