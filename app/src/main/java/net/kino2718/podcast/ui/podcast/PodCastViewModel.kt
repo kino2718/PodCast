@@ -50,7 +50,8 @@ class PodCastViewModel(app: Application) : AndroidViewModel(app) {
                     ?.let { foundItem ->
                         itemFromSearch.copy(
                             playbackPosition = foundItem.playbackPosition,
-                            duration = foundItem.duration
+                            duration = foundItem.duration,
+                            isPlaybackCompleted = foundItem.isPlaybackCompleted,
                         )
                     } ?: itemFromSearch
             }

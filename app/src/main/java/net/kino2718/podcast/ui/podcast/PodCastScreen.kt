@@ -30,7 +30,6 @@ import net.kino2718.podcast.data.Item
 import net.kino2718.podcast.ui.utils.format
 import net.kino2718.podcast.ui.utils.toHMS
 import net.kino2718.podcast.utils.MyLog
-import kotlin.math.abs
 
 @Composable
 fun PodCastScreen(
@@ -174,12 +173,9 @@ private fun Item(
                     }
                     Spacer(modifier = Modifier.weight(1f))
 
-                    val t = if (item.playbackPosition == 0L)
-                        item.duration.toHMS()
-                    else if (abs(item.duration - item.playbackPosition) < 2000L)
-                        stringResource(R.string.playback_done)
-                    else
-                        "${item.playbackPosition.toHMS()}/${item.duration.toHMS()}"
+                    val t = if (item.playbackPosition == 0L) item.duration.toHMS()
+                    else if (item.isPlaybackCompleted) stringResource(R.string.playback_done)
+                    else "${item.playbackPosition.toHMS()}/${item.duration.toHMS()}"
                     Text(
                         text = t,
                         style = MaterialTheme.typography.titleSmall,

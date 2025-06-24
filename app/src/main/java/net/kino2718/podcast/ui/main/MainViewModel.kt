@@ -26,6 +26,7 @@ import net.kino2718.podcast.data.Repository
 import net.kino2718.podcast.service.PlaybackService
 import net.kino2718.podcast.ui.utils.ObservePlaybackPosition
 import net.kino2718.podcast.utils.MyLog
+import kotlin.math.abs
 
 class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val appContext = app.applicationContext
@@ -91,7 +92,12 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 if (duration != C.TIME_UNSET) {
                     val playItem = playItemFlow.value?.item
                     playItem?.let {
-                        val item = it.copy(playbackPosition = position, duration = duration)
+                        val completed = abs(duration - position) < 2000 // 終了まで2秒以内なら再生完了とする
+                        val item = it.copy(
+                            playbackPosition = position,
+                            duration = duration,
+                            isPlaybackCompleted = completed
+                        )
                         repo.updateItem(item)
                     }
                 }
