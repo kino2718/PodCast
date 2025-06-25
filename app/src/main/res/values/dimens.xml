@@ -12,6 +12,8 @@
     <dimen name="channel_image_size">120dp</dimen>
     <dimen name="item_image_size">64dp</dimen>
     <dimen name="control_icon_size">32dp</dimen>
+    <dimen name="subscribed_grid_size">120dp</dimen>
+    <dimen name="rounded_corner">16dp</dimen>
 
     <!-- Progress indicator -->
     <dimen name="circular_progress_indicator_size">64dp</dimen>

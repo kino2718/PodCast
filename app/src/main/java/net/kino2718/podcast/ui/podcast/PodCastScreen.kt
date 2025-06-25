@@ -37,6 +37,7 @@ import net.kino2718.podcast.data.PChannel
 import net.kino2718.podcast.data.PlayItem
 import net.kino2718.podcast.ui.utils.format
 import net.kino2718.podcast.ui.utils.toHMS
+import net.kino2718.podcast.ui.utils.toHttps
 import net.kino2718.podcast.utils.MyLog
 
 @Composable
@@ -97,8 +98,7 @@ private fun Channel(
             horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.padding_small)),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // httpだと表示されないため
-            val imageUrl = channel.imageUrl?.replaceFirst("http://", "https://")
+            val imageUrl = channel.imageUrl?.toHttps() // httpだと表示されないため
             AsyncImage(
                 model = imageUrl,
                 contentDescription = null,

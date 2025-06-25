@@ -75,3 +75,5 @@ fun Long.toHMS(): String {
     sb.append(str)
     return sb.toString()
 }
+
+fun String.toHttps() = this.replaceFirst("http://", "https://")
