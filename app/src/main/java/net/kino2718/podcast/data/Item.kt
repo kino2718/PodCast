@@ -29,6 +29,7 @@ data class Item(
     val link: String = "", // web site
     val imageUrl: String? = null,
     val pubDate: Instant? = null,
+    // 未再生の時はrssから、再生した後はplayerの情報から得る。
     val duration: Long = 0L,// itunes:durationから milli sec
     // 以下は再生状態
     val playbackPosition: Long = 0L, // milli sec

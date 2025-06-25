@@ -15,7 +15,8 @@ data class PChannel(
     val description: String = "",
     val link: String = "", // web site
     val imageUrl: String? = null,
-    val imageFile: String? = null, // 画像をダウンロードして保存しておくファイル名
+    // 以下は状態。
+    val subscribed: Boolean = false,
     // 以下は最新のitemから取得する
     val lastUpdate: Instant? = null,
 )
