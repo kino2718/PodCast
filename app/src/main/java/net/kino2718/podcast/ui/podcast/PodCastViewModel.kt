@@ -100,8 +100,6 @@ class PodCastViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun parse(xml: String): PodCast? {
-        val xmlHead = xml.substring(1, 5000)
-        MyLog.d(TAG, "xml = $xmlHead")
         return try {
             val factory = XmlPullParserFactory.newInstance()
             val parser = factory.newPullParser()
