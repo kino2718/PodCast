@@ -22,6 +22,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -38,6 +39,7 @@ import net.kino2718.podcast.ui.player.AudioPlayer
 import net.kino2718.podcast.ui.player.rememberPlaybackPositionState
 import net.kino2718.podcast.ui.podcast.PodCastScreen
 import net.kino2718.podcast.ui.start.StartScreen
+import net.kino2718.podcast.ui.utils.InteractiveLinearProgressIndicator
 import net.kino2718.podcast.ui.utils.toHMS
 
 @Composable
@@ -176,6 +178,10 @@ fun Control(
     val channel = playItem.channel
     val item = playItem.episode
 
+    val positionState = rememberPlaybackPositionState(player)
+    val playbackPosition = positionState.playbackPosition.position
+    val duration = positionState.playbackPosition.duration
+
     Card(
         modifier = modifier.padding(vertical = dimensionResource(R.dimen.padding_extra_small))
     ) {
@@ -206,9 +212,6 @@ fun Control(
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.titleMedium,
                 )
-                val positionState = rememberPlaybackPositionState(player)
-                val playbackPosition = positionState.playbackPosition.position
-                val duration = positionState.playbackPosition.duration
                 if (duration != C.TIME_UNSET) {
                     val pos = "${playbackPosition.toHMS()}/${duration.toHMS()}"
                     Text(
@@ -218,11 +221,33 @@ fun Control(
                 }
             }
         }
+
+        val progress = if (duration != 0L)
+            (playbackPosition.toFloat() / duration.toFloat()).coerceAtLeast(0f).coerceAtMost(1f)
+        else 0f
+
+        InteractiveLinearProgressIndicator(
+            progress = progress,
+            onTappedFraction = {
+                // tap位置にseekする。
+                val newPos =
+                    (duration * it).toLong().coerceAtLeast(0L).coerceAtMost(duration - 100L)
+                player.seekTo(newPos)
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = dimensionResource(R.dimen.padding_small)),
+        )
+
         AudioPlayer(
             player = player,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(dimensionResource(R.dimen.padding_small)),
+                .padding(
+                    top = dimensionResource(R.dimen.padding_large),
+                    bottom = dimensionResource(R.dimen.padding_small)
+                )
+                .pointerInput(Unit) {},
         )
     }
 }
