@@ -44,9 +44,6 @@ interface PodCastDao {
     @Query("select * from Item where id = :id")
     fun getItemByIdFlow(id: Long): Flow<Item>
 
-    @Query("select * from Item where id = :id")
-    suspend fun getItemById(id: Long): Item?
-
     @Query("select * from Item where guid = :guid")
     suspend fun getItemByGuid(guid: String): Item?
 
@@ -63,7 +60,7 @@ interface PodCastDao {
     suspend fun deleteAllPlayItems()
 
     @Query("select * from PlayItemId")
-    fun getAllPlayItemIdsFlow(): Flow<List<PlayItemId>>
+    fun getLastPlayedItemIdFlow(): Flow<List<PlayItemId>>
 
     @Transaction
     suspend fun addPlayItem(playItem: PlayItem): PlayItem {
@@ -86,7 +83,7 @@ interface PodCastDao {
         val item4 = item3.copy(channelId = channelId)
         // 登録されていたらid以外は新しいデータで置き換える。そうでなければそのまま。
         val itemId = safeUpsertItem(item4)
-        val item = playItem.item.copy(id = itemId)
+        val item = item4.copy(id = itemId)
 
         val playItemId = PlayItemId(channelId = channelId, itemId = itemId)
         safeUpsertPlayItemId(playItemId)
@@ -96,4 +93,9 @@ interface PodCastDao {
 
     @Query("select * from PChannel where feedUrl = :feedUrl")
     fun getPodCastFlowByFeedUrl(feedUrl: String): Flow<PodCast?>
+
+    companion object {
+        @Suppress("unused")
+        private const val TAG = "PodCastDao"
+    }
 }

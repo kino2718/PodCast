@@ -33,6 +33,7 @@ import coil.compose.AsyncImage
 import net.kino2718.podcast.R
 import net.kino2718.podcast.data.PlayItem
 import net.kino2718.podcast.ui.player.AudioPlayer
+import net.kino2718.podcast.ui.player.rememberPlaybackPositionState
 import net.kino2718.podcast.ui.podcast.PodCastScreen
 import net.kino2718.podcast.ui.start.StartScreen
 import net.kino2718.podcast.ui.utils.toHMS
@@ -43,6 +44,7 @@ fun MainScreen(
     viewModel: MainViewModel = viewModel(),
 ) {
     var current by rememberSaveable { mutableStateOf(NavItem.HOME) }
+    val lastPlayedItem by viewModel.lastPlayedItemFlow.collectAsState()
     val playItem by viewModel.playItemFlow.collectAsState()
     val player by viewModel.audioPlayerFlow.collectAsState()
 
@@ -50,8 +52,16 @@ fun MainScreen(
         modifier = modifier.fillMaxSize(),
         bottomBar = {
             Column {
-                playItem?.let { item ->
-                    player?.let { Control(player = it, playItem = item) }
+                val item = playItem
+                val pl = player
+                val last = lastPlayedItem
+                if (item != null && pl != null) {
+                    Control(
+                        player = pl,
+                        playItem = item,
+                    )
+                } else if (last != null) {
+                    LastPlayedItem(lastPlayedItem = last)
                 }
                 NavigationBar {
                     NavItem.entries.forEach { item ->
@@ -88,7 +98,62 @@ fun MainScreen(
             }
             composable<PodCastDestination> { navBackStackEntry ->
                 val podCastDestination = navBackStackEntry.toRoute<PodCastDestination>()
-                PodCastScreen(podCastDestination.feedUrl)
+                PodCastScreen(
+                    podCastDestination.feedUrl,
+                    selectPlayItem = {
+                        viewModel.setPlayItem(it)
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun LastPlayedItem(
+    lastPlayedItem: PlayItem,
+    modifier: Modifier = Modifier,
+) {
+    val channel = lastPlayedItem.channel
+    val item = lastPlayedItem.item
+
+    Card(
+        modifier = modifier.padding(vertical = dimensionResource(R.dimen.padding_extra_small))
+    ) {
+        Row(
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(dimensionResource(R.dimen.padding_small)),
+            horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.padding_small)),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // httpだと表示されないため
+            val imageUrl = item.imageUrl?.replaceFirst("http://", "https://")
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = null,
+                modifier = Modifier.size(dimensionResource(R.dimen.item_image_size))
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = item.title,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Text(
+                    text = channel.title,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                val playbackPosition = item.playbackPosition.toHMS()
+                val duration = item.duration.toHMS()
+                val pos = "$playbackPosition/$duration"
+                Text(
+                    text = pos,
+                    style = MaterialTheme.typography.titleMedium,
+                )
             }
         }
     }
@@ -133,8 +198,9 @@ fun Control(
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.titleMedium,
                 )
-                val playbackPosition = item.playbackPosition.toHMS()
-                val duration = item.duration.toHMS()
+                val positionState = rememberPlaybackPositionState(player)
+                val playbackPosition = positionState.playbackPosition.position.toHMS()
+                val duration = positionState.playbackPosition.duration.toHMS()
                 val pos = "$playbackPosition/$duration"
                 Text(
                     text = pos,

@@ -191,11 +191,9 @@ class PodCastViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun addPlayItem(channel: PChannel, item: Item) {
-        viewModelScope.launch {
-            val playItem = PlayItem(channel = channel, item = item)
-            repo.addPlayItem(playItem)
-        }
+    suspend fun addLastPlayedItem(channel: PChannel, item: Item): PlayItem {
+        val playItem = PlayItem(channel = channel, item = item)
+        return repo.addLastPlayedItem(playItem)
     }
 
     companion object {

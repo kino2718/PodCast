@@ -18,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
@@ -25,8 +26,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import kotlinx.coroutines.launch
 import net.kino2718.podcast.R
 import net.kino2718.podcast.data.Item
+import net.kino2718.podcast.data.PlayItem
 import net.kino2718.podcast.ui.utils.format
 import net.kino2718.podcast.ui.utils.toHMS
 import net.kino2718.podcast.utils.MyLog
@@ -34,6 +37,7 @@ import net.kino2718.podcast.utils.MyLog
 @Composable
 fun PodCastScreen(
     feedUrl: String,
+    selectPlayItem: (PlayItem) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: PodCastViewModel = viewModel()
 ) {
@@ -47,12 +51,19 @@ fun PodCastScreen(
             .padding(dimensionResource(R.dimen.padding_medium)),
         verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.padding_small))
     ) {
+        val scope = rememberCoroutineScope()
         uiState?.let {
             Channel(uiState = it)
             ItemList(
                 uiState = it,
                 selectItem = { item ->
-                    uiState?.let { state -> viewModel.addPlayItem(state.podCast.channel, item) }
+                    uiState?.let { state ->
+                        scope.launch {
+                            // 選択したitemを登録する。
+                            val playItem = viewModel.addLastPlayedItem(state.podCast.channel, item)
+                            selectPlayItem(playItem)
+                        }
+                    }
                 },
             )
         }

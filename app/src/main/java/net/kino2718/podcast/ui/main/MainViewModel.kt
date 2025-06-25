@@ -33,14 +33,13 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val appContext = app.applicationContext
     private val repo = Repository(appContext)
 
-    private val playItemIdFlow = repo.getAllPlayItemIdsFlow()
+    private val lastPlayedItemIdFlow = repo.getLastPlayedItemIdFlow()
         .mapNotNull { list ->
-            // ToDo: 今のところplay listはアイテム1つのみなので先頭のアイテムを取り出す
             if (list.isNotEmpty()) list[0] else null
         }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val playItemFlow = playItemIdFlow
+    val lastPlayedItemFlow = lastPlayedItemIdFlow
         .flatMapLatest {
             // id指定でchannel flowとitem flowを取得しcombineしてFlow<PlayItem>を作成しflatMapする。
             val channelFlow = repo.getChannelByIdFlow(it.channelId)
@@ -51,6 +50,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
+    private val _playItemFlow = MutableStateFlow<PlayItem?>(null)
+    val playItemFlow = _playItemFlow.asStateFlow()
+
+    fun setPlayItem(playItem: PlayItem) {
+        _playItemFlow.value = playItem
+        setPlayer(playItem)
+    }
+
     private var controllerFuture: ListenableFuture<MediaController>? = null
     private var _audioPlayerFlow = MutableStateFlow<Player?>(null)
     val audioPlayerFlow = _audioPlayerFlow.asStateFlow()
@@ -59,17 +66,16 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             initializePlayer()
         }
+    }
+
+    private fun setPlayer(playItem: PlayItem) {
         viewModelScope.launch {
-            combine(audioPlayerFlow, playItemIdFlow) { player, playItemId ->
-                MyLog.d(TAG, "player: $player, playItem: $playItemId")
-                val item = repo.getItemById(playItemId.itemId)
-                if (player != null && item != null) {
-                    // posの値はdurationよりある程度小さくしないとExoPlayerから返ってくるdurationの値が異常に小さくなる
-                    val pos = item.playbackPosition.coerceIn(0L, max(0L, item.duration - 100L))
-                    setMediaItem(player, item.url, pos)
-                }
-                Unit
-            }.collect {}
+            val item = playItem.item
+            _audioPlayerFlow.value?.let { player ->
+                // posの値はdurationよりある程度小さくしないとExoPlayerから返ってくるdurationの値が異常に小さくなる
+                val pos = item.playbackPosition.coerceIn(0L, max(0L, item.duration - 100L))
+                setMediaItem(player, item.url, pos)
+            }
         }
     }
 
@@ -94,15 +100,19 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             scope = viewModelScope,
             onChanged = { position, duration ->
                 if (duration != C.TIME_UNSET) {
-                    val playItem = playItemFlow.value?.item
-                    playItem?.let {
+                    val item1 = _playItemFlow.value?.item
+                    item1?.let {
                         val completed = abs(duration - position) < 2000 // 終了まで2秒以内なら再生完了とする
-                        val item = it.copy(
+                        MyLog.d(
+                            TAG,
+                            "ObservePlaybackPosition.observe: position = $position, duration = $duration, completed = $completed"
+                        )
+                        val item2 = it.copy(
                             playbackPosition = position,
                             duration = duration,
                             isPlaybackCompleted = completed
                         )
-                        repo.updateItem(item)
+                        repo.updateItem(item2)
                     }
                 }
             }
@@ -110,6 +120,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun releasePlayer() {
+        _audioPlayerFlow.value?.stop()
         controllerFuture?.let { MediaController.releaseFuture(it) }
         _audioPlayerFlow.value = null
     }
@@ -122,6 +133,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         val mediaItem = MediaItem.fromUri(uri)
         player.setMediaItem(mediaItem, pos)
         player.prepare()
+        player.play()
     }
 
     override fun onCleared() {

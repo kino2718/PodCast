@@ -6,8 +6,8 @@ import net.kino2718.podcast.db.PodCastDatabase
 class Repository(context: Context) {
     private val podCastDao = PodCastDatabase.getInstance(context).podCastDao()
 
-    suspend fun addPlayItem(playItem: PlayItem): PlayItem {
-        // ToDo: 今のところplay listはitem1つのみとする。そのうち複数のplay listをサポートする。
+    suspend fun addLastPlayedItem(playItem: PlayItem): PlayItem {
+        // 登録を全て消し１つのみ登録する様にする。
         deleteAllPlayItem()
         return podCastDao.addPlayItem(playItem)
     }
@@ -16,8 +16,10 @@ class Repository(context: Context) {
 
     fun getChannelByIdFlow(id: Long) = podCastDao.getChannelByIdFlow(id)
     fun getItemByIdFlow(id: Long) = podCastDao.getItemByIdFlow(id)
-    suspend fun getItemById(id: Long) = podCastDao.getItemById(id)
-    fun getAllPlayItemIdsFlow() = podCastDao.getAllPlayItemIdsFlow()
+    fun getLastPlayedItemIdFlow() = podCastDao.getLastPlayedItemIdFlow()
     suspend fun updateItem(item: Item) = podCastDao.updateItem(item)
     fun getPodCastFlowByFeedUrl(feedUrl: String) = podCastDao.getPodCastFlowByFeedUrl(feedUrl)
 }
+
+@Suppress("unused")
+private const val TAG = "Repository"
