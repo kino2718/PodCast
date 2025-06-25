@@ -3,17 +3,19 @@ package net.kino2718.podcast.ui.home
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -45,33 +47,30 @@ fun HomeScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(dimensionResource(R.dimen.padding_medium)),
+            .padding(dimensionResource(R.dimen.padding_medium))
+            .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.padding_medium))
     ) {
         Text(
             text = stringResource(R.string.title_subscribed),
             style = MaterialTheme.typography.titleLarge
         )
-        BoxWithConstraints {
-            val columnWidth = maxWidth / 3
-            LazyVerticalGrid(
-                columns = GridCells.FixedSize(size = columnWidth),
-                verticalArrangement = Arrangement.Center,
-                horizontalArrangement = Arrangement.Start,
-            ) {
-                items(subscribed) {
-                    AsyncImage(
-                        model = it.imageUrl?.toHttps(), // httpだと表示されないため
-                        contentDescription = null,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(dimensionResource(R.dimen.padding_extra_small))
-                            .clip(RoundedCornerShape(dimensionResource(R.dimen.rounded_corner)))
-                            .clickable {
-                                select(it.feedUrl)
-                            }
-                    )
-                }
+        LazyHorizontalGrid(
+            rows = GridCells.Fixed(2),
+            modifier = Modifier.height(dimensionResource(R.dimen.subscribed_grid_size) * 2)
+        ) {
+            items(subscribed) {
+                AsyncImage(
+                    model = it.imageUrl?.toHttps(), // httpだと表示されないため
+                    contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(dimensionResource(R.dimen.padding_extra_small))
+                        .clip(RoundedCornerShape(dimensionResource(R.dimen.rounded_corner)))
+                        .clickable {
+                            select(it.feedUrl)
+                        }
+                )
             }
         }
         Text(
