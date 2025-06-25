@@ -1,5 +1,6 @@
 package net.kino2718.podcast.ui.main
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -61,7 +62,10 @@ fun MainScreen(
                         playItem = item,
                     )
                 } else if (last != null) {
-                    LastPlayedItem(lastPlayedItem = last)
+                    LastPlayedItem(
+                        lastPlayedItem = last,
+                        selectItem = viewModel::setPlayItem
+                    )
                 }
                 NavigationBar {
                     NavItem.entries.forEach { item ->
@@ -112,6 +116,7 @@ fun MainScreen(
 @Composable
 fun LastPlayedItem(
     lastPlayedItem: PlayItem,
+    selectItem: (PlayItem) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val channel = lastPlayedItem.channel
@@ -123,7 +128,8 @@ fun LastPlayedItem(
         Row(
             modifier = modifier
                 .fillMaxWidth()
-                .padding(dimensionResource(R.dimen.padding_small)),
+                .padding(dimensionResource(R.dimen.padding_small))
+                .clickable { selectItem(lastPlayedItem) },
             horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.padding_small)),
             verticalAlignment = Alignment.CenterVertically,
         ) {
