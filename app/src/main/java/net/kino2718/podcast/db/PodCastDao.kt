@@ -29,6 +29,9 @@ interface PodCastDao {
     @Query("select * from PChannel where feedUrl = :feedUrl")
     suspend fun getChannelByFeedUrl(feedUrl: String): PChannel?
 
+    @Query("select * from PChannel where subscribed = true")
+    fun subscribedChannelFlow(): Flow<List<PChannel>>
+
     @Upsert
     suspend fun upsertItem(item: Item): Long
 

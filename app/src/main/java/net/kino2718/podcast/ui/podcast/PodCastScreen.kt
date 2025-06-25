@@ -11,7 +11,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,6 +33,7 @@ import coil.compose.AsyncImage
 import kotlinx.coroutines.launch
 import net.kino2718.podcast.R
 import net.kino2718.podcast.data.Item
+import net.kino2718.podcast.data.PChannel
 import net.kino2718.podcast.data.PlayItem
 import net.kino2718.podcast.ui.utils.format
 import net.kino2718.podcast.ui.utils.toHMS
@@ -53,7 +58,10 @@ fun PodCastScreen(
     ) {
         val scope = rememberCoroutineScope()
         uiState?.let {
-            Channel(uiState = it)
+            Channel(
+                uiState = it,
+                subscribe = viewModel::subscribe,
+            )
             ItemList(
                 uiState = it,
                 selectItem = { item ->
@@ -73,6 +81,7 @@ fun PodCastScreen(
 @Composable
 private fun Channel(
     uiState: PodCastUIState,
+    subscribe: (PChannel) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val channel = uiState.podCast.channel
@@ -110,6 +119,17 @@ private fun Channel(
                     text = uiState.podCast.itemList.size.format() + " episodes",
                     style = MaterialTheme.typography.titleMedium
                 )
+            }
+            if (!uiState.podCast.channel.subscribed) {
+                IconButton(
+                    onClick = { subscribe(uiState.podCast.channel) },
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.AddCircle,
+                        contentDescription = null,
+                        modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
+                    )
+                }
             }
         }
 

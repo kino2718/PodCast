@@ -5,8 +5,11 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import net.kino2718.podcast.data.Repository
 import net.kino2718.podcast.utils.MyLog
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -26,8 +29,11 @@ data class SearchUIState(
 )
 
 class SearchViewModel(app: Application) : AndroidViewModel(app) {
+    private val repo = Repository(app)
     private val _searchUIStateFlow = MutableStateFlow(SearchUIState())
     val searchUIStateFlow = _searchUIStateFlow.asStateFlow()
+    val subscribedFlow =
+        repo.subscribedChannelFlow().stateIn(viewModelScope, SharingStarted.Lazily, listOf())
 
     fun searchPodcasts(keyword: String) {
         if (keyword.isBlank()) return

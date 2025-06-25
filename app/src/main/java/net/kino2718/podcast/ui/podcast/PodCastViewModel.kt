@@ -42,13 +42,22 @@ class PodCastViewModel(app: Application) : AndroidViewModel(app) {
             // dbにはこのpodcastは登録されていない。
             if (fromDb == null) return@map PodCastUIState(fromSearch)
 
-            // dbからのitemのplaybackPositionとdurationをコピーする。
+            // dbからのchannelのidを状態をコピーする。
+            val fromDbChannel = fromDb.channel
+            val newChannel = fromSearch.channel.copy(
+                id = fromDbChannel.id,
+                subscribed = fromDbChannel.subscribed,
+                lastUpdate = fromDbChannel.lastUpdate
+            )
+            // dbからのitemのidと状態をコピーする。
             val itemListFromSearch = fromSearch.itemList
             val itemListFromDb = fromDb.itemList
             val newItemList = itemListFromSearch.map { itemFromSearch ->
                 itemListFromDb.find { itemFromDb -> itemFromSearch.guid == itemFromDb.guid }
                     ?.let { foundItem ->
                         itemFromSearch.copy(
+                            id = foundItem.id,
+                            channelId = foundItem.channelId,
                             playbackPosition = foundItem.playbackPosition,
                             duration = foundItem.duration,
                             isPlaybackCompleted = foundItem.isPlaybackCompleted,
@@ -56,7 +65,7 @@ class PodCastViewModel(app: Application) : AndroidViewModel(app) {
                     } ?: itemFromSearch
             }
             PodCastUIState(
-                fromSearch.copy(channel = fromSearch.channel, itemList = newItemList)
+                fromSearch.copy(channel = newChannel, itemList = newItemList)
             )
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
@@ -188,6 +197,13 @@ class PodCastViewModel(app: Application) : AndroidViewModel(app) {
         } catch (e: Exception) {
             MyLog.e(TAG, "parse error: $e")
             null
+        }
+    }
+
+    fun subscribe(channel: PChannel) {
+        viewModelScope.launch {
+            MyLog.d(TAG, "subscribe: $channel")
+            repo.subscribe(channel)
         }
     }
 

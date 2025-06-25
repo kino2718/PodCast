@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -11,7 +12,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
@@ -29,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import net.kino2718.podcast.R
@@ -45,6 +46,7 @@ fun SearchScreen(
 ) {
     var query by remember { mutableStateOf("") }
     val uiState by viewModel.searchUIStateFlow.collectAsState()
+    val subscribed by viewModel.subscribedFlow.collectAsState()
     val keyboardController = LocalSoftwareKeyboardController.current
 
     Column(
@@ -73,7 +75,7 @@ fun SearchScreen(
         LazyColumn(
             modifier = Modifier.fillMaxSize()
         ) {
-            items(uiState.results) {
+            items(uiState.results) { podcastState ->
                 Card(
                     modifier = Modifier.padding(vertical = dimensionResource(R.dimen.padding_small))
                 ) {
@@ -81,12 +83,12 @@ fun SearchScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(dimensionResource(R.dimen.padding_small))
-                            .clickable { select(it.feedUrl) },
+                            .clickable { select(podcastState.feedUrl) },
                         horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.padding_small)),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         AsyncImage(
-                            model = it.artworkUrl100,
+                            model = podcastState.artworkUrl100,
                             contentDescription = null,
                             modifier = Modifier.size(dimensionResource(R.dimen.search_result_image_size))
                         )
@@ -94,29 +96,27 @@ fun SearchScreen(
                             modifier = Modifier.weight(1f)
                         ) {
                             Text(
-                                text = it.collectionName,
+                                text = podcastState.collectionName,
                                 style = MaterialTheme.typography.titleMedium
                             )
                             Text(
-                                text = it.artistName,
+                                text = podcastState.artistName,
                                 style = MaterialTheme.typography.titleSmall
                             )
-                            Text(
-                                text = it.trackCount.format() + " episodes",
-                                style = MaterialTheme.typography.titleMedium
-                            )
+                            Row {
+                                Text(
+                                    text = podcastState.trackCount.format() + " episodes",
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                Spacer(modifier = Modifier.weight(1f))
+                                subscribed.find { it.feedUrl == podcastState.feedUrl }?.let {
+                                    Text(
+                                        text = stringResource(R.string.subscribed),
+                                        style = MaterialTheme.typography.titleSmall
+                                    )
+                                }
+                            }
                         }
-
-                        IconButton(
-                            onClick = { },
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.AddCircle,
-                                contentDescription = null,
-                                modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
-                            )
-                        }
-
                     }
                 }
             }
