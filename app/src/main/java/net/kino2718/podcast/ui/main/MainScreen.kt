@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.media3.common.C
 import androidx.media3.common.Player
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -98,6 +99,7 @@ fun MainScreen(
                         val podCastDestination = PodCastDestination(feedUrl = it)
                         navController.navigate(podCastDestination)
                     },
+                    selectItem = viewModel::setPlayItem,
                 )
             }
             composable<PodCastDestination> { navBackStackEntry ->
@@ -205,13 +207,15 @@ fun Control(
                     style = MaterialTheme.typography.titleMedium,
                 )
                 val positionState = rememberPlaybackPositionState(player)
-                val playbackPosition = positionState.playbackPosition.position.toHMS()
-                val duration = positionState.playbackPosition.duration.toHMS()
-                val pos = "$playbackPosition/$duration"
-                Text(
-                    text = pos,
-                    style = MaterialTheme.typography.titleMedium,
-                )
+                val playbackPosition = positionState.playbackPosition.position
+                val duration = positionState.playbackPosition.duration
+                if (duration != C.TIME_UNSET) {
+                    val pos = "${playbackPosition.toHMS()}/${duration.toHMS()}"
+                    Text(
+                        text = pos,
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                }
             }
         }
         AudioPlayer(

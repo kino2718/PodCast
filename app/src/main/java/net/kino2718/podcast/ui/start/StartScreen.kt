@@ -2,6 +2,7 @@ package net.kino2718.podcast.ui.start
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import net.kino2718.podcast.data.PlayItem
 import net.kino2718.podcast.ui.home.HomeScreen
 import net.kino2718.podcast.ui.main.NavItem
 import net.kino2718.podcast.ui.search.SearchScreen
@@ -10,11 +11,13 @@ import net.kino2718.podcast.ui.search.SearchScreen
 fun StartScreen(
     navItem: NavItem,
     select: (String) -> Unit,
+    selectItem: (PlayItem) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     when (navItem) {
         NavItem.HOME -> HomeScreen(
             select = select,
+            selectItem = selectItem,
             modifier = modifier,
         )
 

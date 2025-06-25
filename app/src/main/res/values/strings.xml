@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">PodCast</string>
     <string name="title_subscribed">Subscribed</string>
+    <string name="title_recently_listened">Recently Listened</string>
     <string name="playback_done">listened</string>
     <string name="subscribed">subscribed</string>
 

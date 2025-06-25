@@ -23,6 +23,7 @@ class Repository(context: Context) {
     suspend fun updateEpisode(episode: Episode) = podCastDao.updateEpisode(episode)
     fun getPodCastFlowByFeedUrl(feedUrl: String) = podCastDao.getPodCastFlowByFeedUrl(feedUrl)
     fun subscribedChannelFlow() = podCastDao.subscribedChannelFlow()
+    fun recentlyListenedFlow(limits: Int) = podCastDao.recentlyListenedFlow(limits)
 }
 
 @Suppress("unused")

@@ -6,6 +6,7 @@ import androidx.room.Transaction
 import androidx.room.Update
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import net.kino2718.podcast.data.Episode
 import net.kino2718.podcast.data.PChannel
 import net.kino2718.podcast.data.PlayItem
@@ -25,6 +26,9 @@ interface PodCastDao {
 
     @Query("select * from PChannel where id = :id")
     fun getChannelByIdFlow(id: Long): Flow<PChannel>
+
+    @Query("select * from PChannel where id = :id")
+    suspend fun getChannelById(id: Long): PChannel
 
     @Query("select * from PChannel where feedUrl = :feedUrl")
     suspend fun getChannelByFeedUrl(feedUrl: String): PChannel?
@@ -49,6 +53,9 @@ interface PodCastDao {
 
     @Query("select * from Episode where guid = :guid")
     suspend fun getEpisodeByGuid(guid: String): Episode?
+
+    @Query("select * from Episode where isPlaybackCompleted = false order by lastPlayed desc limit :limits")
+    fun getRecentEpisodeFlow(limits: Int): Flow<List<Episode>>
 
     @Upsert
     suspend fun upsertPlayItemId(item: PlayItemId): Long
@@ -109,6 +116,15 @@ interface PodCastDao {
 
     @Query("select * from PChannel where feedUrl = :feedUrl")
     fun getPodCastFlowByFeedUrl(feedUrl: String): Flow<PodCast?>
+
+    fun recentlyListenedFlow(limits: Int): Flow<List<PlayItem>> {
+        return getRecentEpisodeFlow(limits).map { list ->
+            list.map { ep ->
+                val channel = getChannelById(ep.channelId)
+                PlayItem(channel, ep)
+            }
+        }
+    }
 
     companion object {
         @Suppress("unused")
