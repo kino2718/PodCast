@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.guava.await
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
 import net.kino2718.podcast.data.PlayItem
 import net.kino2718.podcast.data.Repository
 import net.kino2718.podcast.service.PlaybackService
@@ -43,9 +44,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         .flatMapLatest {
             // id指定でchannel flowとitem flowを取得しcombineしてFlow<PlayItem>を作成しflatMapする。
             val channelFlow = repo.getChannelByIdFlow(it.channelId)
-            val itemFlow = repo.getItemByIdFlow(it.itemId)
+            val itemFlow = repo.getEpisodeByIdFlow(it.itemId)
             combine(channelFlow, itemFlow) { channel, item ->
-                PlayItem(channel = channel, item = item, lastPlay = true)
+                PlayItem(channel = channel, episode = item, lastPlay = true)
             }
         }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
@@ -70,7 +71,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun setPlayer(playItem: PlayItem) {
         viewModelScope.launch {
-            val item = playItem.item
+            val item = playItem.episode
             _audioPlayerFlow.value?.let { player ->
                 // posの値はdurationよりある程度小さくしないとExoPlayerから返ってくるdurationの値が異常に小さくなる
                 val pos = item.playbackPosition.coerceIn(0L, max(0L, item.duration - 100L))
@@ -100,7 +101,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             scope = viewModelScope,
             onChanged = { position, duration ->
                 if (duration != C.TIME_UNSET) {
-                    val item1 = _playItemFlow.value?.item
+                    val item1 = _playItemFlow.value?.episode
                     item1?.let {
                         val completed = abs(duration - position) < 2000 // 終了まで2秒以内なら再生完了とする
                         MyLog.d(
@@ -110,9 +111,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                         val item2 = it.copy(
                             playbackPosition = position,
                             duration = duration,
-                            isPlaybackCompleted = completed
+                            isPlaybackCompleted = completed,
+                            lastPlayed = Clock.System.now(),
                         )
-                        repo.updateItem(item2)
+                        repo.updateEpisode(item2)
                     }
                 }
             }

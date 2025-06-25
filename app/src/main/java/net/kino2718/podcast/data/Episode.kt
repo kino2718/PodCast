@@ -17,7 +17,7 @@ import kotlinx.datetime.Instant
         )
     ]
 )
-data class Item(
+data class Episode(
     @PrimaryKey(autoGenerate = true) val id: Long = 0L,
     val channelId: Long = 0L,
     // 以下はrssから取得。ローカルに保存しておく情報。netにアクセスする度に書き換えられる
@@ -34,4 +34,5 @@ data class Item(
     // 以下は再生状態
     val playbackPosition: Long = 0L, // milli sec
     val isPlaybackCompleted: Boolean = false,
+    val lastPlayed: Instant? = null,
 )

@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import net.kino2718.podcast.data.Item
+import net.kino2718.podcast.data.Episode
 import net.kino2718.podcast.data.PChannel
 import net.kino2718.podcast.data.PlayItem
 import net.kino2718.podcast.data.PodCast
@@ -50,8 +50,8 @@ class PodCastViewModel(app: Application) : AndroidViewModel(app) {
                 lastUpdate = fromDbChannel.lastUpdate
             )
             // dbからのitemのidと状態をコピーする。
-            val itemListFromSearch = fromSearch.itemList
-            val itemListFromDb = fromDb.itemList
+            val itemListFromSearch = fromSearch.episodeLists
+            val itemListFromDb = fromDb.episodeLists
             val newItemList = itemListFromSearch.map { itemFromSearch ->
                 itemListFromDb.find { itemFromDb -> itemFromSearch.guid == itemFromDb.guid }
                     ?.let { foundItem ->
@@ -65,7 +65,7 @@ class PodCastViewModel(app: Application) : AndroidViewModel(app) {
                     } ?: itemFromSearch
             }
             PodCastUIState(
-                fromSearch.copy(channel = newChannel, itemList = newItemList)
+                fromSearch.copy(channel = newChannel, episodeLists = newItemList)
             )
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
@@ -89,7 +89,7 @@ class PodCastViewModel(app: Application) : AndroidViewModel(app) {
                             )
                             MyLog.d(
                                 TAG,
-                                "channel = ${podCast.channel}, item = ${podCast.itemList[0]}"
+                                "channel = ${podCast.channel}, item = ${podCast.episodeLists[0]}"
                             )
                             podCastFlowFromSearch.emit(podCast)
                         }
@@ -107,8 +107,8 @@ class PodCastViewModel(app: Application) : AndroidViewModel(app) {
             var event = parser.eventType
 
             var currentChannel = PChannel()
-            var currentItem = Item()
-            val items = mutableListOf<Item>()
+            var currentEpisode = Episode()
+            val episodes = mutableListOf<Episode>()
             var inItem = false // item解析中
             while (event != XmlPullParser.END_DOCUMENT) {
                 when (event) {
@@ -116,64 +116,64 @@ class PodCastViewModel(app: Application) : AndroidViewModel(app) {
                         when (parser.name) {
                             "item" -> {
                                 inItem = true
-                                currentItem = Item()
+                                currentEpisode = Episode()
                             }
 
                             "guid" -> {
                                 if (inItem) {
                                     val text = parser.nextText()
-                                    currentItem = currentItem.copy(guid = text)
+                                    currentEpisode = currentEpisode.copy(guid = text)
                                 }
                             }
 
                             "title" -> {
                                 val text = parser.nextText()
-                                if (inItem) currentItem = currentItem.copy(title = text)
+                                if (inItem) currentEpisode = currentEpisode.copy(title = text)
                                 else currentChannel = currentChannel.copy(title = text)
                             }
 
                             "itunes:author" -> {
                                 val text = parser.nextText()
-                                if (inItem) currentItem = currentItem.copy(author = text)
+                                if (inItem) currentEpisode = currentEpisode.copy(author = text)
                                 else currentChannel = currentChannel.copy(author = text)
                             }
 
                             "description" -> {
                                 val text = parser.nextText()
-                                if (inItem) currentItem = currentItem.copy(description = text)
+                                if (inItem) currentEpisode = currentEpisode.copy(description = text)
                                 else currentChannel = currentChannel.copy(description = text)
                             }
 
                             "link" -> {
                                 val text = parser.nextText()
-                                if (inItem) currentItem = currentItem.copy(link = text)
+                                if (inItem) currentEpisode = currentEpisode.copy(link = text)
                                 else currentChannel = currentChannel.copy(link = text)
                             }
 
                             "itunes:image" -> {
                                 val text = parser.getAttributeValue(null, "href")
-                                if (inItem) currentItem = currentItem.copy(imageUrl = text)
+                                if (inItem) currentEpisode = currentEpisode.copy(imageUrl = text)
                                 else currentChannel = currentChannel.copy(imageUrl = text)
                             }
 
                             "enclosure" -> {
                                 if (inItem) {
                                     val text = parser.getAttributeValue(null, "url")
-                                    currentItem = currentItem.copy(url = text)
+                                    currentEpisode = currentEpisode.copy(url = text)
                                 }
                             }
 
                             "pubDate" -> {
                                 if (inItem) {
                                     val d = parser.nextText().parseToInstant()
-                                    currentItem = currentItem.copy(pubDate = d)
+                                    currentEpisode = currentEpisode.copy(pubDate = d)
                                 }
                             }
 
                             "itunes:duration" -> {
                                 if (inItem) {
                                     val d = parser.nextText().hmsToSeconds() * 1000L
-                                    currentItem = currentItem.copy(duration = d)
+                                    currentEpisode = currentEpisode.copy(duration = d)
                                 }
                             }
                         }
@@ -181,7 +181,7 @@ class PodCastViewModel(app: Application) : AndroidViewModel(app) {
 
                     XmlPullParser.END_TAG -> {
                         if (parser.name == "item") {
-                            items.add(currentItem)
+                            episodes.add(currentEpisode)
                             inItem = false
                         }
                     }
@@ -190,7 +190,7 @@ class PodCastViewModel(app: Application) : AndroidViewModel(app) {
             }
             PodCast(
                 channel = currentChannel,
-                itemList = items.toImmutableList()
+                episodeLists = episodes.toImmutableList()
             )
         } catch (e: Exception) {
             MyLog.e(TAG, "parse error: $e")
@@ -205,8 +205,8 @@ class PodCastViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    suspend fun addLastPlayedItem(channel: PChannel, item: Item): PlayItem {
-        val playItem = PlayItem(channel = channel, item = item)
+    suspend fun addLastPlayedItem(channel: PChannel, episode: Episode): PlayItem {
+        val playItem = PlayItem(channel = channel, episode = episode)
         return repo.addLastPlayedItem(playItem)
     }
 

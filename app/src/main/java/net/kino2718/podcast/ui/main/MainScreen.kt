@@ -120,7 +120,7 @@ fun LastPlayedItem(
     modifier: Modifier = Modifier,
 ) {
     val channel = lastPlayedItem.channel
-    val item = lastPlayedItem.item
+    val item = lastPlayedItem.episode
 
     Card(
         modifier = modifier.padding(vertical = dimensionResource(R.dimen.padding_extra_small))
@@ -172,7 +172,7 @@ fun Control(
     modifier: Modifier = Modifier,
 ) {
     val channel = playItem.channel
-    val item = playItem.item
+    val item = playItem.episode
 
     Card(
         modifier = modifier.padding(vertical = dimensionResource(R.dimen.padding_extra_small))

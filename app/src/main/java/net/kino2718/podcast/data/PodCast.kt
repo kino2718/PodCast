@@ -8,9 +8,9 @@ data class PodCast(
     val channel: PChannel,
 
     @Relation(
-        entity = Item::class,
+        entity = Episode::class,
         parentColumn = "id",
         entityColumn = "channelId",
     )
-    val itemList: List<Item>,
+    val episodeLists: List<Episode>,
 )

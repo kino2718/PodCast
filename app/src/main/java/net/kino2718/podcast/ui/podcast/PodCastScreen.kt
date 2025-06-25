@@ -32,7 +32,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import kotlinx.coroutines.launch
 import net.kino2718.podcast.R
-import net.kino2718.podcast.data.Item
+import net.kino2718.podcast.data.Episode
 import net.kino2718.podcast.data.PChannel
 import net.kino2718.podcast.data.PlayItem
 import net.kino2718.podcast.ui.utils.format
@@ -116,7 +116,7 @@ private fun Channel(
                     style = MaterialTheme.typography.titleSmall
                 )
                 Text(
-                    text = uiState.podCast.itemList.size.format() + " episodes",
+                    text = uiState.podCast.episodeLists.size.format() + " episodes",
                     style = MaterialTheme.typography.titleMedium
                 )
             }
@@ -146,20 +146,20 @@ private fun Channel(
 @Composable
 private fun ItemList(
     uiState: PodCastUIState,
-    selectItem: (Item) -> Unit,
+    selectItem: (Episode) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize()
     ) {
-        val items = uiState.podCast.itemList.map {
+        val items = uiState.podCast.episodeLists.map {
             if (it.imageUrl == null) it.copy(imageUrl = uiState.podCast.channel.imageUrl)
             else it
         }
 
         items(items) {
             Item(
-                item = it,
+                episode = it,
                 selectItem = { selectItem(it) }
             )
         }
@@ -168,7 +168,7 @@ private fun ItemList(
 
 @Composable
 private fun Item(
-    item: Item,
+    episode: Episode,
     selectItem: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -184,7 +184,7 @@ private fun Item(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             // httpだと表示されないため
-            val imageUrl = item.imageUrl?.replaceFirst("http://", "https://")
+            val imageUrl = episode.imageUrl?.replaceFirst("http://", "https://")
             AsyncImage(
                 model = imageUrl,
                 contentDescription = null,
@@ -192,11 +192,11 @@ private fun Item(
             )
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = item.title,
+                    text = episode.title,
                     style = MaterialTheme.typography.titleMedium,
                 )
                 Row {
-                    item.pubDate?.let {
+                    episode.pubDate?.let {
                         Text(
                             text = it.format(),
                             style = MaterialTheme.typography.titleSmall,
@@ -204,9 +204,9 @@ private fun Item(
                     }
                     Spacer(modifier = Modifier.weight(1f))
 
-                    val t = if (item.playbackPosition == 0L) item.duration.toHMS()
-                    else if (item.isPlaybackCompleted) stringResource(R.string.playback_done)
-                    else "${item.playbackPosition.toHMS()}/${item.duration.toHMS()}"
+                    val t = if (episode.playbackPosition == 0L) episode.duration.toHMS()
+                    else if (episode.isPlaybackCompleted) stringResource(R.string.playback_done)
+                    else "${episode.playbackPosition.toHMS()}/${episode.duration.toHMS()}"
                     Text(
                         text = t,
                         style = MaterialTheme.typography.titleSmall,

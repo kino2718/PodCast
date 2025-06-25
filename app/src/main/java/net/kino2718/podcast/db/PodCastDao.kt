@@ -6,7 +6,7 @@ import androidx.room.Transaction
 import androidx.room.Update
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
-import net.kino2718.podcast.data.Item
+import net.kino2718.podcast.data.Episode
 import net.kino2718.podcast.data.PChannel
 import net.kino2718.podcast.data.PlayItem
 import net.kino2718.podcast.data.PlayItemId
@@ -33,22 +33,22 @@ interface PodCastDao {
     fun subscribedChannelFlow(): Flow<List<PChannel>>
 
     @Upsert
-    suspend fun upsertItem(item: Item): Long
+    suspend fun upsertEpisode(episode: Episode): Long
 
-    suspend fun safeUpsertItem(item: Item): Long {
-        val prevId = item.id
-        val id = upsertItem(item)
+    suspend fun safeUpsertEpisode(episode: Episode): Long {
+        val prevId = episode.id
+        val id = upsertEpisode(episode)
         return if (0 < id) id else prevId
     }
 
     @Update
-    suspend fun updateItem(item: Item)
+    suspend fun updateEpisode(episode: Episode)
 
-    @Query("select * from Item where id = :id")
-    fun getItemByIdFlow(id: Long): Flow<Item>
+    @Query("select * from Episode where id = :id")
+    fun getEpisodeByIdFlow(id: Long): Flow<Episode>
 
-    @Query("select * from Item where guid = :guid")
-    suspend fun getItemByGuid(guid: String): Item?
+    @Query("select * from Episode where guid = :guid")
+    suspend fun getEpisodeByGuid(guid: String): Episode?
 
     @Upsert
     suspend fun upsertPlayItemId(item: PlayItemId): Long
@@ -70,28 +70,41 @@ interface PodCastDao {
         val channel1 = playItem.channel
         // feedUrlで既に登録されているかを調べる。
         val channel2 = getChannelByFeedUrl(channel1.feedUrl)
-        // 登録されていたらidだけ取得する。そうでなければそのまま。
-        val channel3 = channel2?.let { channel1.copy(id = it.id) } ?: channel1
+        // 登録されていたらidと状態取得する。そうでなければそのまま。
+        val channel3 = channel2?.let {
+            channel1.copy(
+                id = it.id,
+                subscribed = it.subscribed,
+                lastUpdate = it.lastUpdate,
+            )
+        } ?: channel1
         // 登録されていたらid以外は新しいデータで置き換える。そうでなければそのまま。
         val channelId = safeUpsertChannel(channel3)
         val channel = channel3.copy(id = channelId)
 
-        val item1 = playItem.item
+        val item1 = playItem.episode
         // guidで既に登録されているかを調べる。
-        val item2 = getItemByGuid(item1.guid)
-        // 登録されていたらid, playbackPositionを取得する。そうでなければそのまま。
+        val item2 = getEpisodeByGuid(item1.guid)
+        // 登録されていたらid, 状態を取得する。そうでなければそのまま。
         val item3 =
-            item2?.let { item1.copy(id = it.id, playbackPosition = it.playbackPosition) } ?: item1
+            item2?.let {
+                item1.copy(
+                    id = it.id,
+                    playbackPosition = it.playbackPosition,
+                    duration = it.duration,
+                    lastPlayed = it.lastPlayed
+                )
+            } ?: item1
         // channelIdをコピーする。
         val item4 = item3.copy(channelId = channelId)
         // 登録されていたらid以外は新しいデータで置き換える。そうでなければそのまま。
-        val itemId = safeUpsertItem(item4)
+        val itemId = safeUpsertEpisode(item4)
         val item = item4.copy(id = itemId)
 
         val playItemId = PlayItemId(channelId = channelId, itemId = itemId)
         safeUpsertPlayItemId(playItemId)
 
-        return PlayItem(channel = channel, item = item)
+        return PlayItem(channel = channel, episode = item)
     }
 
     @Query("select * from PChannel where feedUrl = :feedUrl")
