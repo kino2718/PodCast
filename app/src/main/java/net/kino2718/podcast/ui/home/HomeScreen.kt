@@ -52,7 +52,7 @@ fun HomeScreen(
         verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.padding_medium))
     ) {
         Text(
-            text = stringResource(R.string.title_subscribed),
+            text = stringResource(R.string.title_my_subscriptions),
             style = MaterialTheme.typography.titleLarge
         )
         LazyHorizontalGrid(
@@ -74,7 +74,7 @@ fun HomeScreen(
             }
         }
         Text(
-            text = stringResource(R.string.title_recently_listened),
+            text = stringResource(R.string.title_recent_plays),
             style = MaterialTheme.typography.titleLarge,
         )
         LazyRow(verticalAlignment = Alignment.CenterVertically) {
