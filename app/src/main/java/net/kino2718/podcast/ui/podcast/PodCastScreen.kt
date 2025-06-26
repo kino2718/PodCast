@@ -22,6 +22,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
@@ -80,6 +83,8 @@ private fun Channel(
     modifier: Modifier = Modifier,
 ) {
     val channel = uiState.podCast.channel
+    // subscribedの状態はflowで流れて来ないのでここで保持する
+    var subscribed by remember(channel.subscribed) { mutableStateOf(channel.subscribed) }
 
     MyLog.d(TAG, "imageUrl = ${channel.imageUrl}")
     Card(
@@ -114,9 +119,12 @@ private fun Channel(
                     style = MaterialTheme.typography.titleMedium
                 )
             }
-            if (!uiState.podCast.channel.subscribed) {
+            if (!subscribed) {
                 IconButton(
-                    onClick = { subscribe(uiState.podCast.channel) },
+                    onClick = {
+                        subscribed = !subscribed
+                        subscribe(uiState.podCast.channel)
+                    },
                 ) {
                     Icon(
                         imageVector = Icons.Filled.AddCircle,
