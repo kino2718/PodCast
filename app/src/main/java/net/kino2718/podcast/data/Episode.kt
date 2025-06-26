@@ -35,4 +35,40 @@ data class Episode(
     val playbackPosition: Long = 0L, // milli sec
     val isPlaybackCompleted: Boolean = false,
     val lastPlayed: Instant? = null,
-)
+) {
+    data class Builder(
+        var id: Long = 0L,
+        var channelId: Long = 0L,
+        var guid: String = "",
+        var url: String = "",
+        var title: String = "",
+        var author: String = "",
+        var description: String = "",
+        var link: String = "",
+        var imageUrl: String? = null,
+        var pubDate: Instant? = null,
+        var duration: Long = 0L,
+        var playbackPosition: Long = 0L,
+        var isPlaybackCompleted: Boolean = false,
+        var lastPlayed: Instant? = null,
+    ) {
+        fun build(): Episode {
+            return Episode(
+                id = id,
+                channelId = channelId,
+                guid = guid,
+                url = url,
+                title = title,
+                author = author,
+                description = description,
+                link = link,
+                imageUrl = imageUrl,
+                pubDate = pubDate,
+                duration = duration,
+                playbackPosition = playbackPosition,
+                isPlaybackCompleted = isPlaybackCompleted,
+                lastPlayed = lastPlayed,
+            )
+        }
+    }
+}

@@ -4,16 +4,13 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import net.kino2718.podcast.data.Episode
 import net.kino2718.podcast.data.PChannel
-import net.kino2718.podcast.data.PlayItem
 import net.kino2718.podcast.data.PodCast
 import net.kino2718.podcast.data.Repository
 import net.kino2718.podcast.ui.utils.hmsToSeconds
@@ -35,41 +32,39 @@ class PodCastViewModel(app: Application) : AndroidViewModel(app) {
 
     private val podCastFlowFromSearch = MutableSharedFlow<PodCast>()
 
-    @OptIn(ExperimentalCoroutinesApi::class)
-    val uiState = podCastFlowFromSearch.flatMapLatest { fromSearch ->
-        // dbからこのpodcastのflowを取得する。itemListの数は聴いたことのあるものだけ
-        repo.getPodCastFlowByFeedUrl(fromSearch.channel.feedUrl).map { fromDb ->
-            // dbにはこのpodcastは登録されていない。
-            if (fromDb == null) return@map PodCastUIState(fromSearch)
+    val uiState = podCastFlowFromSearch.map { fromSearch ->
+        val fromDb = repo.getPodCastByFeedUrl(fromSearch.channel.feedUrl)
+        // このpodcastはdatabaseには存在しない。
+        if (fromDb == null) return@map PodCastUIState(fromSearch)
 
-            // dbからのchannelのidを状態をコピーする。
-            val fromDbChannel = fromDb.channel
-            val newChannel = fromSearch.channel.copy(
-                id = fromDbChannel.id,
-                subscribed = fromDbChannel.subscribed,
-                lastUpdate = fromDbChannel.lastUpdate
-            )
-            // dbからのitemのidと状態をコピーする。
-            val itemListFromSearch = fromSearch.episodeLists
-            val itemListFromDb = fromDb.episodeLists
-            val newItemList = itemListFromSearch.map { itemFromSearch ->
-                itemListFromDb.find { itemFromDb -> itemFromSearch.guid == itemFromDb.guid }
-                    ?.let { foundItem ->
-                        itemFromSearch.copy(
-                            id = foundItem.id,
-                            channelId = foundItem.channelId,
-                            playbackPosition = foundItem.playbackPosition,
-                            duration = foundItem.duration,
-                            isPlaybackCompleted = foundItem.isPlaybackCompleted,
-                        )
-                    } ?: itemFromSearch
-            }
-            PodCastUIState(
-                fromSearch.copy(channel = newChannel, episodeLists = newItemList)
-            )
+        // dbからのchannelのidを状態をコピーする。
+        val fromDbChannel = fromDb.channel
+        val newChannel = fromSearch.channel.copy(
+            id = fromDbChannel.id,
+            subscribed = fromDbChannel.subscribed,
+            lastUpdate = fromDbChannel.lastUpdate
+        )
+        // dbからのitemのidと状態をコピーする。
+        val itemListFromSearch = fromSearch.episodeLists
+        val itemListFromDb = fromDb.episodeLists
+        val newItemList = itemListFromSearch.map { itemFromSearch ->
+            itemListFromDb.find { itemFromDb -> itemFromSearch.guid == itemFromDb.guid }
+                ?.let { foundItem ->
+                    itemFromSearch.copy(
+                        id = foundItem.id,
+                        channelId = foundItem.channelId,
+                        playbackPosition = foundItem.playbackPosition,
+                        duration = foundItem.duration,
+                        isPlaybackCompleted = foundItem.isPlaybackCompleted,
+                    )
+                } ?: itemFromSearch
         }
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+        PodCastUIState(
+            fromSearch.copy(channel = newChannel, episodeLists = newItemList)
+        )
+    }.stateIn(viewModelScope, SharingStarted.Lazily, null)
 
+    // Urlからrssを読み解析してPodCastオブジェクトを作成してflowに流す。
     fun load(feedUrl: String) {
         viewModelScope.launch(Dispatchers.IO) {
             val client = OkHttpClient()
@@ -83,15 +78,8 @@ class PodCastViewModel(app: Application) : AndroidViewModel(app) {
             response?.let { r ->
                 if (r.isSuccessful) {
                     r.body?.string()?.let { xml ->
-                        parse(xml)?.let {
-                            val podCast = it.copy(
-                                channel = it.channel.copy(feedUrl = feedUrl)
-                            )
-                            MyLog.d(
-                                TAG,
-                                "channel = ${podCast.channel}, item = ${podCast.episodeLists[0]}"
-                            )
-                            podCastFlowFromSearch.emit(podCast)
+                        parse(xml, feedUrl)?.let {
+                            podCastFlowFromSearch.emit(it)
                         }
                     }
                 }
@@ -99,15 +87,16 @@ class PodCastViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    private fun parse(xml: String): PodCast? {
+    private fun parse(xml: String, feedUrl: String): PodCast? {
         return try {
             val factory = XmlPullParserFactory.newInstance()
             val parser = factory.newPullParser()
             parser.setInput(StringReader(xml))
             var event = parser.eventType
 
-            var currentChannel = PChannel()
-            var currentEpisode = Episode()
+            val currentChannel = PChannel.Builder()
+            currentChannel.feedUrl = feedUrl
+            var currentEpisode = Episode.Builder()
             val episodes = mutableListOf<Episode>()
             var inItem = false // item解析中
             while (event != XmlPullParser.END_DOCUMENT) {
@@ -116,64 +105,64 @@ class PodCastViewModel(app: Application) : AndroidViewModel(app) {
                         when (parser.name) {
                             "item" -> {
                                 inItem = true
-                                currentEpisode = Episode()
+                                currentEpisode = Episode.Builder()
                             }
 
                             "guid" -> {
                                 if (inItem) {
                                     val text = parser.nextText()
-                                    currentEpisode = currentEpisode.copy(guid = text)
+                                    currentEpisode.guid = text
                                 }
                             }
 
                             "title" -> {
                                 val text = parser.nextText()
-                                if (inItem) currentEpisode = currentEpisode.copy(title = text)
-                                else currentChannel = currentChannel.copy(title = text)
+                                if (inItem) currentEpisode.title = text
+                                else currentChannel.title = text
                             }
 
                             "itunes:author" -> {
                                 val text = parser.nextText()
-                                if (inItem) currentEpisode = currentEpisode.copy(author = text)
-                                else currentChannel = currentChannel.copy(author = text)
+                                if (inItem) currentEpisode.author = text
+                                else currentChannel.author = text
                             }
 
                             "description" -> {
                                 val text = parser.nextText()
-                                if (inItem) currentEpisode = currentEpisode.copy(description = text)
-                                else currentChannel = currentChannel.copy(description = text)
+                                if (inItem) currentEpisode.description = text
+                                else currentChannel.description = text
                             }
 
                             "link" -> {
                                 val text = parser.nextText()
-                                if (inItem) currentEpisode = currentEpisode.copy(link = text)
-                                else currentChannel = currentChannel.copy(link = text)
+                                if (inItem) currentEpisode.link = text
+                                else currentChannel.link = text
                             }
 
                             "itunes:image" -> {
                                 val text = parser.getAttributeValue(null, "href")
-                                if (inItem) currentEpisode = currentEpisode.copy(imageUrl = text)
-                                else currentChannel = currentChannel.copy(imageUrl = text)
+                                if (inItem) currentEpisode.imageUrl = text
+                                else currentChannel.imageUrl = text
                             }
 
                             "enclosure" -> {
                                 if (inItem) {
                                     val text = parser.getAttributeValue(null, "url")
-                                    currentEpisode = currentEpisode.copy(url = text)
+                                    currentEpisode.url = text
                                 }
                             }
 
                             "pubDate" -> {
                                 if (inItem) {
                                     val d = parser.nextText().parseToInstant()
-                                    currentEpisode = currentEpisode.copy(pubDate = d)
+                                    currentEpisode.pubDate = d
                                 }
                             }
 
                             "itunes:duration" -> {
                                 if (inItem) {
                                     val d = parser.nextText().hmsToSeconds() * 1000L
-                                    currentEpisode = currentEpisode.copy(duration = d)
+                                    currentEpisode.duration = d
                                 }
                             }
                         }
@@ -181,7 +170,7 @@ class PodCastViewModel(app: Application) : AndroidViewModel(app) {
 
                     XmlPullParser.END_TAG -> {
                         if (parser.name == "item") {
-                            episodes.add(currentEpisode)
+                            episodes.add(currentEpisode.build())
                             inItem = false
                         }
                     }
@@ -189,7 +178,7 @@ class PodCastViewModel(app: Application) : AndroidViewModel(app) {
                 event = parser.next()
             }
             PodCast(
-                channel = currentChannel,
+                channel = currentChannel.build(),
                 episodeLists = episodes.toImmutableList()
             )
         } catch (e: Exception) {
@@ -203,11 +192,6 @@ class PodCastViewModel(app: Application) : AndroidViewModel(app) {
             MyLog.d(TAG, "subscribe: $channel")
             repo.subscribe(channel)
         }
-    }
-
-    suspend fun addLastPlayedItem(channel: PChannel, episode: Episode): PlayItem {
-        val playItem = PlayItem(channel = channel, episode = episode)
-        return repo.addLastPlayedItem(playItem)
     }
 
     companion object {

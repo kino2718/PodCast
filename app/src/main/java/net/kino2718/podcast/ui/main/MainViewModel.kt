@@ -11,12 +11,10 @@ import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.guava.await
@@ -39,24 +37,28 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             if (list.isNotEmpty()) list[0] else null
         }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     val lastPlayedItemFlow = lastPlayedItemIdFlow
-        .flatMapLatest {
-            // id指定でchannel flowとitem flowを取得しcombineしてFlow<PlayItem>を作成しflatMapする。
-            val channelFlow = repo.getChannelByIdFlow(it.channelId)
-            val itemFlow = repo.getEpisodeByIdFlow(it.itemId)
-            combine(channelFlow, itemFlow) { channel, item ->
-                PlayItem(channel = channel, episode = item, lastPlay = true)
-            }
+        .map {
+            val channel = repo.getChannelById(it.channelId)
+            val item = repo.getEpisodeById(it.itemId)
+            if (channel == null || item == null) null
+            else PlayItem(channel = channel, episode = item, lastPlay = true)
         }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+        .stateIn(viewModelScope, SharingStarted.Lazily, null)
 
     private val _playItemFlow = MutableStateFlow<PlayItem?>(null)
     val playItemFlow = _playItemFlow.asStateFlow()
 
     fun setPlayItem(playItem: PlayItem) {
-        _playItemFlow.value = playItem
-        setPlayer(playItem)
+        viewModelScope.launch {
+            val playItemWithId = addPlayItem(playItem)
+            _playItemFlow.value = playItemWithId
+            setPlayer(playItemWithId)
+        }
+    }
+
+    private suspend fun addPlayItem(playItem: PlayItem): PlayItem {
+        return repo.addPlayItem(playItem)
     }
 
     private var controllerFuture: ListenableFuture<MediaController>? = null
@@ -104,10 +106,6 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     val item1 = _playItemFlow.value?.episode
                     item1?.let {
                         val completed = abs(duration - position) < 2000 // 終了まで2秒以内なら再生完了とする
-                        MyLog.d(
-                            TAG,
-                            "ObservePlaybackPosition.observe: position = $position, duration = $duration, completed = $completed"
-                        )
                         val item2 = it.copy(
                             playbackPosition = position,
                             duration = duration,

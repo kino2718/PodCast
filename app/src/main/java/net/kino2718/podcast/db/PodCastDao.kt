@@ -25,10 +25,7 @@ interface PodCastDao {
     }
 
     @Query("select * from PChannel where id = :id")
-    fun getChannelByIdFlow(id: Long): Flow<PChannel>
-
-    @Query("select * from PChannel where id = :id")
-    suspend fun getChannelById(id: Long): PChannel
+    suspend fun getChannelById(id: Long): PChannel?
 
     @Query("select * from PChannel where feedUrl = :feedUrl")
     suspend fun getChannelByFeedUrl(feedUrl: String): PChannel?
@@ -49,7 +46,7 @@ interface PodCastDao {
     suspend fun updateEpisode(episode: Episode)
 
     @Query("select * from Episode where id = :id")
-    fun getEpisodeByIdFlow(id: Long): Flow<Episode>
+    suspend fun getEpisodeById(id: Long): Episode?
 
     @Query("select * from Episode where guid = :guid")
     suspend fun getEpisodeByGuid(guid: String): Episode?
@@ -72,6 +69,9 @@ interface PodCastDao {
     @Query("select * from PlayItemId")
     fun getLastPlayedItemIdFlow(): Flow<List<PlayItemId>>
 
+    // PlayItemに含まれる channel, episode を登録する。
+    // feedUrl と guid で同じデータが既に登録されているかを確認する。
+    // 登録されていたらidと状態以外を更新する。
     @Transaction
     suspend fun addPlayItem(playItem: PlayItem): PlayItem {
         val channel1 = playItem.channel
@@ -108,6 +108,7 @@ interface PodCastDao {
         val itemId = safeUpsertEpisode(item4)
         val item = item4.copy(id = itemId)
 
+        // 現在再生しているPlayItemを登録する。
         val playItemId = PlayItemId(channelId = channelId, itemId = itemId)
         safeUpsertPlayItemId(playItemId)
 
@@ -115,13 +116,14 @@ interface PodCastDao {
     }
 
     @Query("select * from PChannel where feedUrl = :feedUrl")
-    fun getPodCastFlowByFeedUrl(feedUrl: String): Flow<PodCast?>
+    suspend fun getPodCastByFeedUrl(feedUrl: String): PodCast?
 
     fun recentlyListenedFlow(limits: Int): Flow<List<PlayItem>> {
         return getRecentEpisodeFlow(limits).map { list ->
-            list.map { ep ->
-                val channel = getChannelById(ep.channelId)
-                PlayItem(channel, ep)
+            list.mapNotNull { ep ->
+                getChannelById(ep.channelId)?.let {
+                    PlayItem(it, ep)
+                }
             }
         }
     }

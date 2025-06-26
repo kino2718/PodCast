@@ -22,7 +22,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
@@ -30,7 +29,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
-import kotlinx.coroutines.launch
 import net.kino2718.podcast.R
 import net.kino2718.podcast.data.Episode
 import net.kino2718.podcast.data.PChannel
@@ -57,7 +55,6 @@ fun PodCastScreen(
             .padding(dimensionResource(R.dimen.padding_medium)),
         verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.padding_small))
     ) {
-        val scope = rememberCoroutineScope()
         uiState?.let {
             Channel(
                 uiState = it,
@@ -65,13 +62,10 @@ fun PodCastScreen(
             )
             ItemList(
                 uiState = it,
-                selectItem = { item ->
+                selectItem = { episode ->
                     uiState?.let { state ->
-                        scope.launch {
-                            // 選択したitemを登録する。
-                            val playItem = viewModel.addLastPlayedItem(state.podCast.channel, item)
-                            selectPlayItem(playItem)
-                        }
+                        val playItem = PlayItem(channel = state.podCast.channel, episode = episode)
+                        selectPlayItem(playItem)
                     }
                 },
             )
@@ -204,11 +198,11 @@ private fun Item(
                     }
                     Spacer(modifier = Modifier.weight(1f))
 
-                    val t = if (episode.playbackPosition == 0L) episode.duration.toHMS()
-                    else if (episode.isPlaybackCompleted) stringResource(R.string.playback_done)
-                    else "${episode.playbackPosition.toHMS()}/${episode.duration.toHMS()}"
+                    val text =
+                        if (episode.isPlaybackCompleted) stringResource(R.string.playback_done)
+                        else episode.duration.toHMS()
                     Text(
-                        text = t,
+                        text = text,
                         style = MaterialTheme.typography.titleSmall,
                     )
                 }

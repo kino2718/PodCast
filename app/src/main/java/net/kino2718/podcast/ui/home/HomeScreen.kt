@@ -88,7 +88,6 @@ fun HomeScreen(
                         .padding(dimensionResource(R.dimen.padding_extra_small))
                         .clip(RoundedCornerShape(dimensionResource(R.dimen.rounded_corner)))
                         .clickable {
-                            viewModel.addLastPlayedItem(it.channel, it.episode)
                             selectItem(it)
                         },
                 ) {
