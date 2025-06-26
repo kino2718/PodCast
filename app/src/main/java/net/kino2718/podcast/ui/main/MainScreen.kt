@@ -51,6 +51,7 @@ fun MainScreen(
     val lastPlayedItem by viewModel.lastPlayedItemFlow.collectAsState()
     val playItem by viewModel.playItemFlow.collectAsState()
     val player by viewModel.audioPlayerFlow.collectAsState()
+    val navController = rememberNavController()
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -74,7 +75,13 @@ fun MainScreen(
                     NavItem.entries.forEach { item ->
                         NavigationBarItem(
                             selected = current == item,
-                            onClick = { current = item },
+                            onClick = {
+                                // Navigationで移動している時は最初の画面に戻る
+                                navController.navigate(StartDestination) {
+                                    popUpTo(navController.graph.startDestinationId)
+                                }
+                                current = item
+                            },
                             icon = {
                                 androidx.compose.material3.Icon(
                                     imageVector = item.icon,
@@ -88,7 +95,6 @@ fun MainScreen(
             }
         }
     ) { innerPadding ->
-        val navController = rememberNavController()
         NavHost(
             navController = navController,
             startDestination = StartDestination,
