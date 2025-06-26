@@ -1,28 +1,28 @@
 [versions]
 agp = "8.11.0"
-kotlin = "2.1.20"
+kotlin = "2.2.0"
 coreKtx = "1.16.0"
 junit = "4.13.2"
 junitVersion = "1.2.1"
 espressoCore = "3.6.1"
 lifecycleRuntimeKtx = "2.9.1"
 activityCompose = "1.10.1"
-composeBom = "2024.09.00"
-ksp = "2.1.20-1.0.32"
+composeBom = "2025.06.01"
+ksp = "2.2.0-2.0.2"
 ## room
 room = "2.7.2"
 # navigation
 navigation = "2.9.0"
 # serialization
-serialization = "2.1.20"
-kotlinxSerializationJson = "1.7.3"
+serialization = "2.2.0"
+kotlinxSerializationJson = "1.8.1"
 # media3
 media3 = "1.7.1"
 # その他
 okhttp = "4.12.0"
-coilCompose = "2.4.0"
-kotlinxDatetime = "0.5.0"
-kotlinxCoroutinesGuava = "1.9.0"
+coilCompose = "2.7.0"
+kotlinxDatetime = "0.6.2"
+kotlinxCoroutinesGuava = "1.10.2"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
