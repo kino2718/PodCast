@@ -50,7 +50,7 @@ fun Long.toHMS(): String {
     // 負の時間が入ってきた時は0にする。
     val millis = if (0 <= this) this else return "-"
     // 秒に変換
-    var seconds = millis / 1000L
+    var seconds = (millis + 500L) / 1000L
 
     val sb = StringBuilder()
     // 時は1以上の場合のみ表示する。
