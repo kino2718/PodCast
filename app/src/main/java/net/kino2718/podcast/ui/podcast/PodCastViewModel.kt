@@ -187,10 +187,9 @@ class PodCastViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun subscribe(channel: PChannel) {
+    fun subscribe(channel: PChannel, subscribe: Boolean) {
         viewModelScope.launch {
-            MyLog.d(TAG, "subscribe: $channel")
-            repo.subscribe(channel)
+            repo.subscribe(channel, subscribe)
         }
     }
 

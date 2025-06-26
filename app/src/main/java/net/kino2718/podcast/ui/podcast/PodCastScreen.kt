@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -79,7 +80,7 @@ fun PodCastScreen(
 @Composable
 private fun Channel(
     uiState: PodCastUIState,
-    subscribe: (PChannel) -> Unit,
+    subscribe: (PChannel, Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val channel = uiState.podCast.channel
@@ -119,19 +120,18 @@ private fun Channel(
                     style = MaterialTheme.typography.titleMedium
                 )
             }
-            if (!subscribed) {
-                IconButton(
-                    onClick = {
-                        subscribed = !subscribed
-                        subscribe(uiState.podCast.channel)
-                    },
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.AddCircle,
-                        contentDescription = null,
-                        modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
-                    )
-                }
+            val image = if (!subscribed) Icons.Filled.AddCircle else Icons.Default.Delete
+            IconButton(
+                onClick = {
+                    subscribed = !subscribed
+                    subscribe(uiState.podCast.channel, subscribed)
+                },
+            ) {
+                Icon(
+                    imageVector = image,
+                    contentDescription = null,
+                    modifier = Modifier.size(dimensionResource(R.dimen.icon_medium)),
+                )
             }
         }
 

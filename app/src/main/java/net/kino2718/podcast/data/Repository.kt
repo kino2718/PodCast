@@ -6,8 +6,8 @@ import net.kino2718.podcast.db.PodCastDatabase
 class Repository(context: Context) {
     private val podCastDao = PodCastDatabase.getInstance(context).podCastDao()
 
-    suspend fun subscribe(channel: PChannel) =
-        podCastDao.safeUpsertChannel(channel.copy(subscribed = true))
+    suspend fun subscribe(channel: PChannel, subscribe: Boolean) =
+        podCastDao.safeUpsertChannel(channel.copy(subscribed = subscribe))
 
     suspend fun addPlayItem(playItem: PlayItem): PlayItem {
         // 登録を全て消し１つのみ登録する様にする。
