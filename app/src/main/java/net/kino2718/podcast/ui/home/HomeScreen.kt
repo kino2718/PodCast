@@ -42,7 +42,7 @@ fun HomeScreen(
     viewModel: HomeViewModel = viewModel()
 ) {
     val subscribed by viewModel.subscribedFlow.collectAsState()
-    val recentlyListened by viewModel.recentlyListenedFlow.collectAsState()
+    val recentPlays by viewModel.recentPlays.collectAsState()
 
     Column(
         modifier = modifier
@@ -78,7 +78,7 @@ fun HomeScreen(
             style = MaterialTheme.typography.titleLarge,
         )
         LazyRow(verticalAlignment = Alignment.CenterVertically) {
-            items(recentlyListened) {
+            items(recentPlays) {
                 Box(
                     modifier = Modifier
                         .size(

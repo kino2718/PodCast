@@ -6,7 +6,7 @@ import androidx.room.Transaction
 import androidx.room.Update
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import kotlinx.datetime.Clock
 import net.kino2718.podcast.data.Episode
 import net.kino2718.podcast.data.PChannel
 import net.kino2718.podcast.data.PlayItem
@@ -52,7 +52,7 @@ interface PodCastDao {
     suspend fun getEpisodeByGuid(guid: String): Episode?
 
     @Query("select * from Episode where isPlaybackCompleted = false order by lastPlayed desc limit :limits")
-    fun getRecentEpisodeFlow(limits: Int): Flow<List<Episode>>
+    suspend fun getRecentEpisodes(limits: Int): List<Episode>
 
     @Upsert
     suspend fun upsertPlayItemId(item: PlayItemId): Long
@@ -102,8 +102,8 @@ interface PodCastDao {
                     lastPlayed = it.lastPlayed
                 )
             } ?: item1
-        // channelIdをコピーする。
-        val item4 = item3.copy(channelId = channelId)
+        // channelIdをコピーする。lastPlayedの時刻も更新する。
+        val item4 = item3.copy(channelId = channelId, lastPlayed = Clock.System.now())
         // 登録されていたらid以外は新しいデータで置き換える。そうでなければそのまま。
         val itemId = safeUpsertEpisode(item4)
         val item = item4.copy(id = itemId)
@@ -118,12 +118,10 @@ interface PodCastDao {
     @Query("select * from PChannel where feedUrl = :feedUrl")
     suspend fun getPodCastByFeedUrl(feedUrl: String): PodCast?
 
-    fun recentlyListenedFlow(limits: Int): Flow<List<PlayItem>> {
-        return getRecentEpisodeFlow(limits).map { list ->
-            list.mapNotNull { ep ->
-                getChannelById(ep.channelId)?.let {
-                    PlayItem(it, ep)
-                }
+    suspend fun getRecentPlays(limits: Int): List<PlayItem> {
+        return getRecentEpisodes(limits).mapNotNull { ep ->
+            getChannelById(ep.channelId)?.let {
+                PlayItem(it, ep)
             }
         }
     }
