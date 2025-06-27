@@ -1,6 +1,7 @@
 package net.kino2718.podcast.ui.main
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,7 +18,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -191,10 +194,26 @@ fun Control(
     Card(
         modifier = modifier.padding(vertical = dimensionResource(R.dimen.padding_extra_small))
     ) {
+        var offset by remember { mutableFloatStateOf(0f) }
         Row(
             modifier = modifier
                 .fillMaxWidth()
-                .padding(dimensionResource(R.dimen.padding_small)),
+                .padding(dimensionResource(R.dimen.padding_small))
+                .pointerInput(Unit) {
+                    val width = size.width
+                    detectHorizontalDragGestures(
+                        onDragEnd = {
+                            seekTo(player, offset / width)
+                            offset = 0f
+                        },
+                        onDragCancel = {
+                            seekTo(player, offset / width)
+                            offset = 0f
+                        }
+                    ) { _, dragAmount ->
+                        offset += dragAmount
+                    }
+                },
             horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.padding_small)),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -256,4 +275,14 @@ fun Control(
                 .pointerInput(Unit) {},
         )
     }
+}
+
+private fun seekTo(player: Player, amount: Float) {
+    // 端から端までswipeで2分とする
+    val seekAmount = (amount * 2 * 60 * 1000).toLong()
+    val newPosition =
+        (player.contentPosition + seekAmount)
+            .coerceAtLeast(0L)
+            .coerceAtMost(player.duration - 100L)
+    player.seekTo(newPosition)
 }
