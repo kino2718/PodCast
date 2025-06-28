@@ -38,6 +38,16 @@ interface PodCastDao {
     @Query("select * from PChannel where subscribed = true")
     suspend fun subscribedChannels(): List<PChannel>
 
+    suspend fun subscribe(channel: PChannel, subscribe: Boolean) {
+        val channel1 = getChannelByFeedUrl(channel.feedUrl)
+        val channel2 = channel1?.let { c ->
+            // 既に登録されていたらidをコピー
+            channel.copy(id = c.id)
+        } ?: channel
+        val channel3 = channel2.copy(subscribed = subscribe)
+        upsertChannel(channel3)
+    }
+
     @Upsert
     suspend fun upsertEpisode(episode: Episode): Long
 

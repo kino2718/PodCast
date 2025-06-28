@@ -7,7 +7,7 @@ class Repository(context: Context) {
     private val podCastDao = PodCastDatabase.getInstance(context).podCastDao()
 
     suspend fun subscribe(channel: PChannel, subscribe: Boolean) =
-        podCastDao.safeUpsertChannel(channel.copy(subscribed = subscribe))
+        podCastDao.subscribe(channel, subscribe)
 
     suspend fun addPlayItem(playItem: PlayItem): PlayItem {
         // 登録を全て消し１つのみ登録する様にする。
