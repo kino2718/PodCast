@@ -132,6 +132,9 @@ interface PodCastDao {
     @Query("select * from Episode where channelId = :channelId order by lastPlayed desc limit 1")
     suspend fun getLastPlayedEpisode(channelId: Long): Episode?
 
+    @Query("select * from Episode where channelId = :channelId and isPlaybackCompleted = true order by pubDate desc limit 1")
+    suspend fun getLatestEpisode(channelId: Long): Episode?
+
     companion object {
         @Suppress("unused")
         private const val TAG = "PodCastDao"

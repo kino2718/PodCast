@@ -44,6 +44,7 @@ fun HomeScreen(
     val subscribed by viewModel.subscribedFlow.collectAsState()
     val recentPlays by viewModel.recentPlays.collectAsState()
     val nextEpisodes by viewModel.nextEpisodesFlow.collectAsState()
+    val latestEpisodes by viewModel.latestEpisodesFlow.collectAsState()
 
     Column(
         modifier = modifier
@@ -88,6 +89,14 @@ fun HomeScreen(
         )
         ShowPlayItemList(
             playItemList = nextEpisodes,
+            selectItem = selectItem,
+        )
+        Text(
+            text = stringResource(R.string.title_latest_episodes),
+            style = MaterialTheme.typography.titleLarge
+        )
+        ShowPlayItemList(
+            playItemList = latestEpisodes,
             selectItem = selectItem,
         )
     }

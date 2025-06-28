@@ -11,11 +11,13 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Clock
 import net.kino2718.podcast.data.PlayItem
 import net.kino2718.podcast.data.Repository
 import net.kino2718.podcast.ui.utils.loadRss
 import net.kino2718.podcast.utils.MyLog
 import okhttp3.internal.toImmutableList
+import kotlin.time.Duration.Companion.days
 
 class HomeViewModel(app: Application) : AndroidViewModel(app) {
     private val repo = Repository(app)
@@ -64,6 +66,69 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
                                 _nextEpisodesFlow.value = nextEpisodeList.toImmutableList()
                             }
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    // latest episodes flow
+    private val _latestEpisodesFlow = MutableStateFlow<List<PlayItem>>(listOf())
+    val latestEpisodesFlow = _latestEpisodesFlow.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            // latest episodes flowを作成。
+            // 登録してあるpodcastそれぞれから最近追加されたepisodeを表示する。
+            // 判断は登録されている最新のepisodeより新しいもので1週間以内のものとする。
+            // 取得するタイミングは last played item id が変化したタイミング。
+            repo.getLastPlayedItemIdFlow().collect { _ ->
+                val latestEpisodeList = mutableListOf<PlayItem>()
+
+                repo.subscribedChannels().map { channel ->
+                    // 各channel毎に処理する。
+                    // rssを読み込む。
+                    withContext(Dispatchers.IO) { loadRss(channel.feedUrl) }?.let { rssData ->
+                        MyLog.d(TAG, "latestEpisodesFlow: channel = ${rssData.channel.title}")
+                        // 登録されてる最新のepisodeを取得
+                        val latestEpisode = repo.getLatestEpisode(channel.id)
+                        // podCastの中から登録されている最新のepisodeのlist中のidを取得
+                        val index = latestEpisode?.let { latest ->
+                            rssData.episodeList.indexOfFirst { it.guid == latest.guid }
+                        } ?: -1
+                        MyLog.d(
+                            TAG,
+                            "latestEpisodesFlow: channel = ${rssData.channel.title}, index = $index"
+                        )
+                        // 先頭なら最新のepisodeは登録済みなので何もしない。
+                        // 見つからない(index == -1)場合はこのchannelはまだ一度も聴いていない。
+                        val candidateEpisodes = if (0 <= index)
+                            rssData.episodeList.subList(0, index)
+                        else rssData.episodeList
+                        MyLog.d(
+                            TAG,
+                            "latestEpisodesFlow: candidates = ${candidateEpisodes.map { it.title }}"
+                        )
+                        val now = Clock.System.now()
+                        candidateEpisodes
+                            .filter {
+                                // ここ最近に限定する
+                                it.pubDate?.let { pubDate ->
+                                    now - pubDate < 14.days
+                                } ?: false
+                            }
+                            .forEach {
+                                latestEpisodeList.add(
+                                    PlayItem(
+                                        channel = rssData.channel,
+                                        episode = it
+                                    )
+                                )
+                            }
+                        // rss処理に時間がかかるので途中経過も表示する。
+                        _latestEpisodesFlow.value = latestEpisodeList.sortedByDescending {
+                            it.episode.pubDate
+                        }.toImmutableList()
                     }
                 }
             }
