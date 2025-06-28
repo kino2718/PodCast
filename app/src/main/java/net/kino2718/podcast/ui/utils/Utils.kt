@@ -46,6 +46,14 @@ fun Instant.format(timeZone: TimeZone = TimeZone.currentSystemDefault()): String
             localDateTime.minute.toString().padStart(2, '0')
 }
 
+fun Instant.formatToDate(
+    template: String,
+    timeZone: TimeZone = TimeZone.currentSystemDefault()
+): String {
+    val localDateTime = this.toLocalDateTime(timeZone)
+    return String.format(template, localDateTime.monthNumber, localDateTime.dayOfMonth)
+}
+
 fun Long.toHMS(): String {
     // 負の時間が入ってきた時は0にする。
     val millis = if (0 <= this) this else return "-"

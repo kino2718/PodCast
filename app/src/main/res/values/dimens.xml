@@ -15,7 +15,7 @@
     <dimen name="subscribed_grid_size">120dp</dimen>
     <dimen name="rounded_corner">16dp</dimen>
 
-    <dimen name="recently_box_width">140dp</dimen>
+    <dimen name="recently_box_width">160dp</dimen>
     <dimen name="recently_box_height">120dp</dimen>
 
     <!-- Progress indicator -->

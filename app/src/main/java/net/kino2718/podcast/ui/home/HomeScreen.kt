@@ -29,9 +29,12 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.media3.common.C
 import coil.compose.AsyncImage
 import net.kino2718.podcast.R
 import net.kino2718.podcast.data.PlayItem
+import net.kino2718.podcast.ui.utils.formatToDate
+import net.kino2718.podcast.ui.utils.toHMS
 import net.kino2718.podcast.ui.utils.toHttps
 
 @Composable
@@ -75,27 +78,18 @@ fun HomeScreen(
                 )
             }
         }
-        Text(
-            text = stringResource(R.string.title_recent_plays),
-            style = MaterialTheme.typography.titleLarge,
-        )
         ShowPlayItemList(
+            title = stringResource(R.string.title_recent_plays),
             playItemList = recentPlays,
             selectItem = selectItem,
         )
-        Text(
-            text = stringResource(R.string.title_next_episodes),
-            style = MaterialTheme.typography.titleLarge
-        )
         ShowPlayItemList(
+            title = stringResource(R.string.title_next_episodes),
             playItemList = nextEpisodes,
             selectItem = selectItem,
         )
-        Text(
-            text = stringResource(R.string.title_latest_episodes),
-            style = MaterialTheme.typography.titleLarge
-        )
         ShowPlayItemList(
+            title = stringResource(R.string.title_latest_episodes),
             playItemList = latestEpisodes,
             selectItem = selectItem,
         )
@@ -104,60 +98,77 @@ fun HomeScreen(
 
 @Composable
 private fun ShowPlayItemList(
+    title: String,
     playItemList: List<PlayItem>,
     selectItem: (PlayItem) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    LazyRow(
-        modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        items(playItemList) { playItem ->
-            Box(
-                modifier = Modifier
-                    .size(
-                        width = dimensionResource(R.dimen.recently_box_width),
-                        height = dimensionResource(R.dimen.recently_box_height)
+    if (playItemList.isNotEmpty()) {
+        Text(
+            text = title,
+            modifier = modifier.padding(bottom = dimensionResource(R.dimen.padding_medium)),
+            style = MaterialTheme.typography.titleLarge,
+        )
+        LazyRow(
+            modifier = modifier,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            items(playItemList) { playItem ->
+                Box(
+                    modifier = Modifier
+                        .size(
+                            width = dimensionResource(R.dimen.recently_box_width),
+                            height = dimensionResource(R.dimen.recently_box_height)
+                        )
+                        .padding(dimensionResource(R.dimen.padding_extra_small))
+                        .clip(RoundedCornerShape(dimensionResource(R.dimen.rounded_corner)))
+                        .clickable {
+                            selectItem(playItem)
+                        },
+                ) {
+                    AsyncImage(
+                        model = playItem.episode.imageUrl?.toHttps(),
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                        alpha = .4f
                     )
-                    .padding(dimensionResource(R.dimen.padding_extra_small))
-                    .clip(RoundedCornerShape(dimensionResource(R.dimen.rounded_corner)))
-                    .clickable {
-                        selectItem(playItem)
-                    },
-            ) {
-                AsyncImage(
-                    model = playItem.episode.imageUrl?.toHttps(),
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
-                    alpha = .4f
-                )
-                Column(modifier = Modifier.padding(dimensionResource(R.dimen.padding_small))) {
-                    val channel = playItem.channel
-                    val item = playItem.episode
-                    Text(
-                        text = item.title,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        style = MaterialTheme.typography.titleMedium,
-                    )
-                    Text(
-                        text = channel.title,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        style = MaterialTheme.typography.titleMedium,
-                    )
-                    /*
-                                            val playbackPosition = item.playbackPosition.toHMS()
-                                            val duration = item.duration.toHMS()
-                                            val pos = "$playbackPosition/$duration"
-                                            Text(
-                                                text = pos,
-                                                style = MaterialTheme.typography.titleMedium,
-                                            )
-                    */
-                }
+                    Column(modifier = Modifier.padding(dimensionResource(R.dimen.padding_small))) {
+                        val channel = playItem.channel
+                        val item = playItem.episode
+                        Text(
+                            text = item.title,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            style = MaterialTheme.typography.titleSmall,
+                        )
+                        Text(
+                            text = channel.title,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            style = MaterialTheme.typography.titleSmall,
+                        )
+                        item.pubDate?.formatToDate(stringResource(R.string.date_template))
+                            ?.let { date ->
+                                Text(
+                                    text = date,
+                                    style = MaterialTheme.typography.titleSmall
+                                )
+                            }
+                        val playbackPosition = item.playbackPosition
+                        val duration = item.duration
+                        if (duration != C.TIME_UNSET) {
+                            val text =
+                                if (0L < playbackPosition) "${playbackPosition.toHMS()}/${duration.toHMS()}"
+                                else duration.toHMS()
+                            Text(
+                                text = text,
+                                style = MaterialTheme.typography.titleSmall,
+                            )
+                        }
+                    }
 
+                }
             }
         }
     }
