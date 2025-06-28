@@ -66,7 +66,7 @@ interface PodCastDao {
     @Query("select * from Episode where guid = :guid")
     suspend fun getEpisodeByGuid(guid: String): Episode?
 
-    @Query("select * from Episode where isPlaybackCompleted = false order by lastPlayed desc limit :limits")
+    @Query("select * from Episode where 0 < playbackPosition and isPlaybackCompleted = false order by lastPlayed desc limit :limits")
     suspend fun getRecentEpisodes(limits: Int): List<Episode>
 
     @Upsert
@@ -170,7 +170,7 @@ interface PodCastDao {
         }
     }
 
-    @Query("select * from Episode where channelId = :channelId order by lastPlayed desc limit 1")
+    @Query("select * from Episode where channelId = :channelId and 0 < playbackPosition order by lastPlayed desc limit 1")
     suspend fun getLastPlayedEpisode(channelId: Long): Episode?
 
     @Query("select * from Episode where channelId = :channelId and isPlaybackCompleted = true order by pubDate desc limit 1")
