@@ -80,9 +80,7 @@ fun MainScreen(
                             selected = current == item,
                             onClick = {
                                 // Navigationで移動している時は最初の画面に戻る
-                                navController.navigate(StartDestination) {
-                                    popUpTo(navController.graph.startDestinationId)
-                                }
+                                while (navController.previousBackStackEntry != null) navController.navigateUp()
                                 current = item
                             },
                             icon = {

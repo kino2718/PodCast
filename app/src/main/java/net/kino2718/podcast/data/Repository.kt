@@ -29,8 +29,11 @@ class Repository(context: Context) {
     fun subscribedChannelFlow() = podCastDao.subscribedChannelFlow()
     suspend fun subscribedChannels() = podCastDao.subscribedChannels()
     suspend fun getRecentPlays(limits: Int) = podCastDao.getRecentPlays(limits)
-    suspend fun getLastPlayedEpisode(channelId: Long) = podCastDao.getLastPlayedEpisode(channelId)
-    suspend fun getLatestEpisode(channelId: Long) = podCastDao.getLatestEpisode(channelId)
+    suspend fun getLastPlayedEpisodeByFeedUrl(feedUrl: String) =
+        podCastDao.getLastPlayedEpisodeByFeedUrl(feedUrl)
+
+    suspend fun getLatestCompletedEpisodeByFeedUrl(feedUrl: String) =
+        podCastDao.getLatestCompletedEpisodeByFeedUrl(feedUrl)
 }
 
 @Suppress("unused")

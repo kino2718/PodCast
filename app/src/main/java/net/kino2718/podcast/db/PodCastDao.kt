@@ -13,7 +13,6 @@ import net.kino2718.podcast.data.PlayItem
 import net.kino2718.podcast.data.PlayItemId
 import net.kino2718.podcast.data.PlaylistItem
 import net.kino2718.podcast.data.PodCast
-import kotlin.math.max
 
 @Dao
 interface PodCastDao {
@@ -173,8 +172,22 @@ interface PodCastDao {
     @Query("select * from Episode where channelId = :channelId and 0 < playbackPosition order by lastPlayed desc limit 1")
     suspend fun getLastPlayedEpisode(channelId: Long): Episode?
 
+    @Transaction
+    suspend fun getLastPlayedEpisodeByFeedUrl(feedUrl: String): Episode? {
+        return getChannelByFeedUrl(feedUrl)?.let { channel ->
+            getLastPlayedEpisode(channel.id)
+        }
+    }
+
     @Query("select * from Episode where channelId = :channelId and isPlaybackCompleted = true order by pubDate desc limit 1")
-    suspend fun getLatestEpisode(channelId: Long): Episode?
+    suspend fun getLatestCompletedEpisode(channelId: Long): Episode?
+
+    @Transaction
+    suspend fun getLatestCompletedEpisodeByFeedUrl(feedUrl: String): Episode? {
+        return getChannelByFeedUrl(feedUrl)?.let { channel ->
+            getLatestCompletedEpisode(channel.id)
+        }
+    }
 
     companion object {
         @Suppress("unused")
