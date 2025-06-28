@@ -111,7 +111,7 @@ interface PodCastDao {
     @Transaction
     suspend fun addToPlaylist(playItem: PlayItem) {
         val playlist = getPlayList()
-        val maxOrder = playlist.fold(0) { v, item -> max(v, item.playOrder) }
+        val maxOrder = playlist.lastOrNull()?.playOrder ?: -1
         val savedPlayItem = upsertPlayItem(playItem)
         val playlistItem = PlaylistItem(
             playOrder = maxOrder + 1,
