@@ -12,5 +12,5 @@ data class PodCast(
         parentColumn = "id",
         entityColumn = "channelId",
     )
-    val episodeLists: List<Episode>,
+    val episodeList: List<Episode>,
 )

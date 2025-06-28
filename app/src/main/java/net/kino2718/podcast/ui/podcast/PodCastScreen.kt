@@ -116,7 +116,7 @@ private fun Channel(
                     style = MaterialTheme.typography.titleSmall
                 )
                 Text(
-                    text = uiState.podCast.episodeLists.size.format() + " episodes",
+                    text = uiState.podCast.episodeList.size.format() + " episodes",
                     style = MaterialTheme.typography.titleMedium
                 )
             }
@@ -154,12 +154,7 @@ private fun ItemList(
     LazyColumn(
         modifier = modifier.fillMaxSize()
     ) {
-        val items = uiState.podCast.episodeLists.map {
-            if (it.imageUrl == null) it.copy(imageUrl = uiState.podCast.channel.imageUrl)
-            else it
-        }
-
-        items(items) {
+        items(uiState.podCast.episodeList) {
             Item(
                 episode = it,
                 selectItem = { selectItem(it) }

@@ -33,6 +33,9 @@ interface PodCastDao {
     @Query("select * from PChannel where subscribed = true")
     fun subscribedChannelFlow(): Flow<List<PChannel>>
 
+    @Query("select * from PChannel where subscribed = true")
+    suspend fun subscribedChannels(): List<PChannel>
+
     @Upsert
     suspend fun upsertEpisode(episode: Episode): Long
 
@@ -125,6 +128,9 @@ interface PodCastDao {
             }
         }
     }
+
+    @Query("select * from Episode where channelId = :channelId order by lastPlayed desc limit 1")
+    suspend fun getLastPlayedEpisode(channelId: Long): Episode?
 
     companion object {
         @Suppress("unused")

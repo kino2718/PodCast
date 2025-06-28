@@ -2,6 +2,7 @@
     <string name="app_name">PodCast</string>
     <string name="title_my_subscriptions">My Subscriptions</string>
     <string name="title_recent_plays">Recent Plays</string>
+    <string name="title_next_episodes">Next Episodes</string>
     <string name="playback_done">listened</string>
     <string name="subscribed">subscribed</string>
 

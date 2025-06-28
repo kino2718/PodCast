@@ -43,6 +43,7 @@ fun HomeScreen(
 ) {
     val subscribed by viewModel.subscribedFlow.collectAsState()
     val recentPlays by viewModel.recentPlays.collectAsState()
+    val nextEpisodes by viewModel.nextEpisodesFlow.collectAsState()
 
     Column(
         modifier = modifier
@@ -77,54 +78,77 @@ fun HomeScreen(
             text = stringResource(R.string.title_recent_plays),
             style = MaterialTheme.typography.titleLarge,
         )
-        LazyRow(verticalAlignment = Alignment.CenterVertically) {
-            items(recentPlays) {
-                Box(
-                    modifier = Modifier
-                        .size(
-                            width = dimensionResource(R.dimen.recently_box_width),
-                            height = dimensionResource(R.dimen.recently_box_height)
-                        )
-                        .padding(dimensionResource(R.dimen.padding_extra_small))
-                        .clip(RoundedCornerShape(dimensionResource(R.dimen.rounded_corner)))
-                        .clickable {
-                            selectItem(it)
-                        },
-                ) {
-                    AsyncImage(
-                        model = it.episode.imageUrl?.toHttps(),
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop,
-                        alpha = .4f
-                    )
-                    Column(modifier = Modifier.padding(dimensionResource(R.dimen.padding_small))) {
-                        val channel = it.channel
-                        val item = it.episode
-                        Text(
-                            text = item.title,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            style = MaterialTheme.typography.titleMedium,
-                        )
-                        Text(
-                            text = channel.title,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            style = MaterialTheme.typography.titleMedium,
-                        )
-                        /*
-                                                val playbackPosition = item.playbackPosition.toHMS()
-                                                val duration = item.duration.toHMS()
-                                                val pos = "$playbackPosition/$duration"
-                                                Text(
-                                                    text = pos,
-                                                    style = MaterialTheme.typography.titleMedium,
-                                                )
-                        */
-                    }
+        ShowPlayItemList(
+            playItemList = recentPlays,
+            selectItem = selectItem,
+        )
+        Text(
+            text = stringResource(R.string.title_next_episodes),
+            style = MaterialTheme.typography.titleLarge
+        )
+        ShowPlayItemList(
+            playItemList = nextEpisodes,
+            selectItem = selectItem,
+        )
+    }
+}
 
+@Composable
+private fun ShowPlayItemList(
+    playItemList: List<PlayItem>,
+    selectItem: (PlayItem) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    LazyRow(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        items(playItemList) { playItem ->
+            Box(
+                modifier = Modifier
+                    .size(
+                        width = dimensionResource(R.dimen.recently_box_width),
+                        height = dimensionResource(R.dimen.recently_box_height)
+                    )
+                    .padding(dimensionResource(R.dimen.padding_extra_small))
+                    .clip(RoundedCornerShape(dimensionResource(R.dimen.rounded_corner)))
+                    .clickable {
+                        selectItem(playItem)
+                    },
+            ) {
+                AsyncImage(
+                    model = playItem.episode.imageUrl?.toHttps(),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    alpha = .4f
+                )
+                Column(modifier = Modifier.padding(dimensionResource(R.dimen.padding_small))) {
+                    val channel = playItem.channel
+                    val item = playItem.episode
+                    Text(
+                        text = item.title,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    Text(
+                        text = channel.title,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    /*
+                                            val playbackPosition = item.playbackPosition.toHMS()
+                                            val duration = item.duration.toHMS()
+                                            val pos = "$playbackPosition/$duration"
+                                            Text(
+                                                text = pos,
+                                                style = MaterialTheme.typography.titleMedium,
+                                            )
+                    */
                 }
+
             }
         }
     }
