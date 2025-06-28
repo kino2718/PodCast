@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import net.kino2718.podcast.data.PChannel
+import net.kino2718.podcast.data.PlayItem
 import net.kino2718.podcast.data.PodCast
 import net.kino2718.podcast.data.Repository
 import net.kino2718.podcast.ui.utils.loadRss
@@ -65,6 +66,12 @@ class PodCastViewModel(app: Application) : AndroidViewModel(app) {
     fun subscribe(channel: PChannel, subscribe: Boolean) {
         viewModelScope.launch {
             repo.subscribe(channel, subscribe)
+        }
+    }
+
+    fun addToPlaylist(playItem: PlayItem) {
+        viewModelScope.launch {
+            repo.addToPlaylist(playItem)
         }
     }
 

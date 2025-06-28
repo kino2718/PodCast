@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Card
@@ -32,6 +33,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.media3.common.C
 import coil.compose.AsyncImage
 import net.kino2718.podcast.R
 import net.kino2718.podcast.data.Episode
@@ -72,6 +74,12 @@ fun PodCastScreen(
                         selectPlayItem(playItem)
                     }
                 },
+                addPlaylist = { episode ->
+                    uiState?.let { state ->
+                        val playItem = PlayItem(channel = state.podCast.channel, episode = episode)
+                        viewModel.addToPlaylist(playItem)
+                    }
+                }
             )
         }
     }
@@ -149,6 +157,7 @@ private fun Channel(
 private fun ItemList(
     uiState: PodCastUIState,
     selectItem: (Episode) -> Unit,
+    addPlaylist: (Episode) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -157,7 +166,8 @@ private fun ItemList(
         items(uiState.podCast.episodeList) {
             Item(
                 episode = it,
-                selectItem = { selectItem(it) }
+                selectItem = selectItem,
+                addPlayList = addPlaylist,
             )
         }
     }
@@ -166,7 +176,8 @@ private fun ItemList(
 @Composable
 private fun Item(
     episode: Episode,
-    selectItem: () -> Unit,
+    selectItem: (Episode) -> Unit,
+    addPlayList: (Episode) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Card(
@@ -176,7 +187,7 @@ private fun Item(
             modifier = modifier
                 .fillMaxWidth()
                 .padding(dimensionResource(R.dimen.padding_small))
-                .clickable { selectItem() },
+                .clickable { selectItem(episode) },
             horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.padding_small)),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -201,17 +212,32 @@ private fun Item(
                     }
                     Spacer(modifier = Modifier.weight(1f))
 
-                    val text =
-                        if (episode.isPlaybackCompleted) stringResource(R.string.playback_done)
-                        else episode.duration.toHMS()
-                    Text(
-                        text = text,
-                        style = MaterialTheme.typography.titleSmall,
-                    )
+                    val playbackPosition = episode.playbackPosition
+                    val duration = episode.duration
+                    if (duration != C.TIME_UNSET) {
+                        val text =
+                            if (episode.isPlaybackCompleted) stringResource(R.string.playback_done)
+                            else if (0L < playbackPosition) "${playbackPosition.toHMS()}/${duration.toHMS()}"
+                            else duration.toHMS()
+                        Text(
+                            text = text,
+                            style = MaterialTheme.typography.titleSmall,
+                        )
+                    }
                 }
+            }
+            IconButton(
+                onClick = { addPlayList(episode) },
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.PlaylistAdd,
+                    contentDescription = null,
+                    modifier = Modifier.size(dimensionResource(R.dimen.icon_small)),
+                )
             }
         }
     }
 }
 
+@Suppress("unused")
 private const val TAG = "PodCastScreen"

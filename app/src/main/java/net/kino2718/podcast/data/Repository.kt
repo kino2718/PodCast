@@ -15,6 +15,10 @@ class Repository(context: Context) {
         return podCastDao.addPlayItem(playItem)
     }
 
+    suspend fun addToPlaylist(playItem: PlayItem) {
+        podCastDao.addToPlaylist(playItem)
+    }
+
     private suspend fun deleteAllPlayItem() = podCastDao.deleteAllPlayItems()
 
     suspend fun getChannelById(id: Long) = podCastDao.getChannelById(id)

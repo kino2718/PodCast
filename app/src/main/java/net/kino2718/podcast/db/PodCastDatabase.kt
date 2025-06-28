@@ -8,8 +8,12 @@ import androidx.room.TypeConverters
 import net.kino2718.podcast.data.Episode
 import net.kino2718.podcast.data.PChannel
 import net.kino2718.podcast.data.PlayItemId
+import net.kino2718.podcast.data.PlaylistItem
 
-@Database(entities = [PChannel::class, Episode::class, PlayItemId::class], version = 1)
+@Database(
+    entities = [PChannel::class, Episode::class, PlayItemId::class, PlaylistItem::class],
+    version = 1
+)
 @TypeConverters(DataConverter::class)
 abstract class PodCastDatabase : RoomDatabase() {
     abstract fun podCastDao(): PodCastDao

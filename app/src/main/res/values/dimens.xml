@@ -6,6 +6,7 @@
     <dimen name="padding_medium">16dp</dimen>
     <dimen name="padding_large">24dp</dimen>
 
+    <dimen name="icon_small">20dp</dimen>
     <dimen name="icon_medium">28dp</dimen>
 
     <dimen name="search_result_image_size">80dp</dimen>

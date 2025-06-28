@@ -40,9 +40,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     val lastPlayedItemFlow = lastPlayedItemIdFlow
         .map {
             val channel = repo.getChannelById(it.channelId)
-            val item = repo.getEpisodeById(it.itemId)
+            val item = repo.getEpisodeById(it.episodeId)
             if (channel == null || item == null) null
-            else PlayItem(channel = channel, episode = item)
+            else PlayItem(channel = channel, episode = item, it.inPlaylist)
         }
         .stateIn(viewModelScope, SharingStarted.Lazily, null)
 

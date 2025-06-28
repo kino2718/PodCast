@@ -11,7 +11,9 @@ import net.kino2718.podcast.data.Episode
 import net.kino2718.podcast.data.PChannel
 import net.kino2718.podcast.data.PlayItem
 import net.kino2718.podcast.data.PlayItemId
+import net.kino2718.podcast.data.PlaylistItem
 import net.kino2718.podcast.data.PodCast
+import kotlin.math.max
 
 @Dao
 interface PodCastDao {
@@ -77,6 +79,39 @@ interface PodCastDao {
     // 登録されていたらidと状態以外を更新する。
     @Transaction
     suspend fun addPlayItem(playItem: PlayItem): PlayItem {
+        val savedPlayItem = upsertPlayItem(playItem)
+
+        // 現在再生しているPlayItemを登録する。
+        val playItemId =
+            PlayItemId(
+                channelId = savedPlayItem.channel.id,
+                episodeId = savedPlayItem.episode.id,
+                inPlaylist = savedPlayItem.inPlaylist,
+            )
+        safeUpsertPlayItemId(playItemId)
+        return savedPlayItem
+    }
+
+    @Query("select * from PlaylistItem order by playOrder")
+    suspend fun getPlayList(): List<PlaylistItem>
+
+    @Upsert
+    suspend fun upsertPlaylistItem(item: PlaylistItem): Long
+
+    @Transaction
+    suspend fun addToPlaylist(playItem: PlayItem) {
+        val playlist = getPlayList()
+        val maxOrder = playlist.fold(0) { v, item -> max(v, item.playOrder) }
+        val savedPlayItem = upsertPlayItem(playItem)
+        val playlistItem = PlaylistItem(
+            playOrder = maxOrder + 1,
+            channelId = savedPlayItem.channel.id,
+            episodeId = savedPlayItem.episode.id
+        )
+        upsertPlaylistItem(playlistItem)
+    }
+
+    private suspend fun upsertPlayItem(playItem: PlayItem): PlayItem {
         val channel1 = playItem.channel
         // feedUrlで既に登録されているかを調べる。
         val channel2 = getChannelByFeedUrl(channel1.feedUrl)
@@ -111,11 +146,7 @@ interface PodCastDao {
         val itemId = safeUpsertEpisode(item4)
         val item = item4.copy(id = itemId)
 
-        // 現在再生しているPlayItemを登録する。
-        val playItemId = PlayItemId(channelId = channelId, itemId = itemId)
-        safeUpsertPlayItemId(playItemId)
-
-        return PlayItem(channel = channel, episode = item)
+        return PlayItem(channel = channel, episode = item, playItem.inPlaylist)
     }
 
     @Query("select * from PChannel where feedUrl = :feedUrl")
