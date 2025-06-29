@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -148,7 +149,7 @@ private fun ShowPlayItemList(
                             overflow = TextOverflow.Ellipsis,
                             style = MaterialTheme.typography.titleSmall,
                         )
-                        item.pubDate?.formatToDate(stringResource(R.string.date_template))
+                        item.pubDate?.formatToDate(LocalContext.current)
                             ?.let { date ->
                                 Text(
                                     text = date,

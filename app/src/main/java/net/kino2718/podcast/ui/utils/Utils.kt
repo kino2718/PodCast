@@ -1,14 +1,18 @@
 package net.kino2718.podcast.ui.utils
 
+import android.content.Context
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toKotlinInstant
 import kotlinx.datetime.toLocalDateTime
+import net.kino2718.podcast.R
 import java.text.NumberFormat
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+import kotlin.time.Duration.Companion.days
 
 @Suppress("unused")
 private const val TAG = "Utils"
@@ -47,11 +51,22 @@ fun Instant.format(timeZone: TimeZone = TimeZone.currentSystemDefault()): String
 }
 
 fun Instant.formatToDate(
-    template: String,
+    context: Context,
     timeZone: TimeZone = TimeZone.currentSystemDefault()
 ): String {
-    val localDateTime = this.toLocalDateTime(timeZone)
-    return String.format(template, localDateTime.monthNumber, localDateTime.dayOfMonth)
+    val now = Clock.System.now()
+    val useYear = (30.days * 11 <= now - this)
+    return if (useYear) {
+        val template = context.getString(R.string.year_month_day_template)
+        val localDateTime = this.toLocalDateTime(timeZone)
+        String.format(
+            template, localDateTime.year, localDateTime.monthNumber, localDateTime.dayOfMonth
+        )
+    } else {
+        val template = context.getString(R.string.month_day_template)
+        val localDateTime = this.toLocalDateTime(timeZone)
+        String.format(template, localDateTime.monthNumber, localDateTime.dayOfMonth)
+    }
 }
 
 fun Long.toHMS(): String {
