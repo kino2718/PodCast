@@ -1,6 +1,7 @@
 package net.kino2718.podcast.db
 
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
@@ -102,14 +103,23 @@ interface PodCastDao {
     }
 
     @Query("select * from PlaylistItem order by playOrder")
-    suspend fun getPlayList(): List<PlaylistItem>
+    suspend fun getPlaylistItems(): List<PlaylistItem>
+
+    @Query("select * from PlaylistItem order by playOrder")
+    fun getPlaylistItemsFlow(): Flow<List<PlaylistItem>>
+
+    @Query("delete from PlaylistItem")
+    suspend fun deleteAllPlaylistItems()
+
+    @Delete
+    suspend fun deletePlaylistItem(playlistItem: PlaylistItem)
 
     @Upsert
     suspend fun upsertPlaylistItem(item: PlaylistItem): Long
 
     @Transaction
     suspend fun addToPlaylist(playItem: PlayItem) {
-        val playlist = getPlayList()
+        val playlist = getPlaylistItems()
         val maxOrder = playlist.lastOrNull()?.playOrder ?: -1
         val savedPlayItem = upsertPlayItem(playItem)
         val playlistItem = PlaylistItem(

@@ -7,6 +7,7 @@
     <string name="playback_done">listened</string>
     <string name="subscribed">subscribed</string>
     <string name="date_template">%s月%s日</string>
+    <string name="playlist">Playlist</string>
 
     <!-- player -->
     <string name="play_pause_button_play" translatable="false">Play</string>

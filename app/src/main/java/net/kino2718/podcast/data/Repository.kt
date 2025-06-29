@@ -34,6 +34,11 @@ class Repository(context: Context) {
 
     suspend fun getLatestCompletedEpisodeByFeedUrl(feedUrl: String) =
         podCastDao.getLatestCompletedEpisodeByFeedUrl(feedUrl)
+
+    fun getPlaylistItemsFlow() = podCastDao.getPlaylistItemsFlow()
+    suspend fun deleteAllPlaylistItems() = podCastDao.deleteAllPlaylistItems()
+    suspend fun deletePlaylistItem(playlistItem: PlaylistItem) =
+        podCastDao.deletePlaylistItem(playlistItem)
 }
 
 @Suppress("unused")

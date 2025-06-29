@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -41,6 +42,7 @@ import net.kino2718.podcast.data.PlayItem
 import net.kino2718.podcast.ui.player.AudioPlayer
 import net.kino2718.podcast.ui.player.rememberPlaybackPositionState
 import net.kino2718.podcast.ui.podcast.PodCastScreen
+import net.kino2718.podcast.ui.main.NavItem
 import net.kino2718.podcast.ui.start.StartScreen
 import net.kino2718.podcast.ui.utils.InteractiveLinearProgressIndicator
 import net.kino2718.podcast.ui.utils.toHMS
@@ -84,7 +86,7 @@ fun MainScreen(
                                 current = item
                             },
                             icon = {
-                                androidx.compose.material3.Icon(
+                                Icon(
                                     imageVector = item.icon,
                                     contentDescription = item.label
                                 )
