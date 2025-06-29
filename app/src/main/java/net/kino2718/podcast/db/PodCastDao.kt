@@ -66,7 +66,7 @@ interface PodCastDao {
     @Query("select * from Episode where guid = :guid")
     suspend fun getEpisodeByGuid(guid: String): Episode?
 
-    @Query("select * from Episode where 0 < playbackPosition and isPlaybackCompleted = false order by lastPlayed desc limit :limits")
+    @Query("select * from Episode where (lastPlayed is not null) and (isPlaybackCompleted = false) order by lastPlayed desc limit :limits")
     suspend fun getRecentEpisodes(limits: Int): List<Episode>
 
     @Upsert
@@ -89,7 +89,11 @@ interface PodCastDao {
     // 登録されていたらidと状態以外を更新する。
     @Transaction
     suspend fun addPlayItem(playItem: PlayItem): PlayItem {
-        val savedPlayItem = upsertPlayItem(playItem)
+        val playItemWithTime = playItem.copy(
+            channel = playItem.channel,
+            episode = playItem.episode.copy(lastPlayed = Clock.System.now())
+        )
+        val savedPlayItem = upsertPlayItem(playItemWithTime)
 
         // 現在再生しているPlayItemを登録する。
         val playItemId =
@@ -146,24 +150,24 @@ interface PodCastDao {
         val channelId = safeUpsertChannel(channel3)
         val channel = channel3.copy(id = channelId)
 
-        val item1 = playItem.episode
+        val episode1 = playItem.episode
         // guidで既に登録されているかを調べる。
-        val item2 = getEpisodeByGuid(item1.guid)
+        val episode2 = getEpisodeByGuid(episode1.guid)
         // 登録されていたらid, 状態を取得する。そうでなければそのまま。
-        val item3 =
-            item2?.let {
-                item1.copy(
+        val episode3 =
+            episode2?.let {
+                episode1.copy(
                     id = it.id,
                     playbackPosition = it.playbackPosition,
                     duration = it.duration,
                     lastPlayed = it.lastPlayed
                 )
-            } ?: item1
-        // channelIdをコピーする。lastPlayedの時刻も更新する。
-        val item4 = item3.copy(channelId = channelId, lastPlayed = Clock.System.now())
+            } ?: episode1
+        // channelIdをコピーする。
+        val episode4 = episode3.copy(channelId = channelId)
         // 登録されていたらid以外は新しいデータで置き換える。そうでなければそのまま。
-        val itemId = safeUpsertEpisode(item4)
-        val item = item4.copy(id = itemId)
+        val episodeId = safeUpsertEpisode(episode4)
+        val item = episode4.copy(id = episodeId)
 
         return PlayItem(channel = channel, episode = item, playItem.inPlaylist)
     }
@@ -179,7 +183,7 @@ interface PodCastDao {
         }
     }
 
-    @Query("select * from Episode where channelId = :channelId and 0 < playbackPosition order by lastPlayed desc limit 1")
+    @Query("select * from Episode where (channelId = :channelId) and (lastPlayed is not null) order by lastPlayed desc limit 1")
     suspend fun getLastPlayedEpisode(channelId: Long): Episode?
 
     @Transaction
@@ -189,7 +193,7 @@ interface PodCastDao {
         }
     }
 
-    @Query("select * from Episode where channelId = :channelId and isPlaybackCompleted = true order by pubDate desc limit 1")
+    @Query("select * from Episode where (channelId = :channelId) and (isPlaybackCompleted = true) order by pubDate desc limit 1")
     suspend fun getLatestCompletedEpisode(channelId: Long): Episode?
 
     @Transaction
