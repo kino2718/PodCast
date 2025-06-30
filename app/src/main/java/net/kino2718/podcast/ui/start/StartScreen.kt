@@ -4,8 +4,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import net.kino2718.podcast.data.PlayItem
 import net.kino2718.podcast.ui.home.HomeScreen
-import net.kino2718.podcast.ui.playlist.PlaylistScreen
 import net.kino2718.podcast.ui.main.NavItem
+import net.kino2718.podcast.ui.playlist.PlaylistScreen
 import net.kino2718.podcast.ui.search.SearchScreen
 
 @Composable
@@ -13,6 +13,7 @@ fun StartScreen(
     navItem: NavItem,
     select: (String) -> Unit,
     selectItem: (PlayItem) -> Unit,
+    selectItems: (List<PlayItem>, Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     when (navItem) {
@@ -27,6 +28,8 @@ fun StartScreen(
             modifier = modifier
         )
 
-        NavItem.PLAYLIST -> PlaylistScreen()
+        NavItem.PLAYLIST -> PlaylistScreen(
+            selectItems = selectItems,
+        )
     }
 }

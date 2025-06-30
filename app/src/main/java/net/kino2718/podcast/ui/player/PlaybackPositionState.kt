@@ -20,7 +20,11 @@ fun rememberPlaybackPositionState(player: Player): PlaybackPositionState {
     return playbackPositionState
 }
 
-data class PlaybackPosition(val position: Long = 0L, val duration: Long = C.TIME_UNSET)
+data class PlaybackPosition(
+    val index: Int = 0,
+    val position: Long = 0L,
+    val duration: Long = C.TIME_UNSET
+)
 
 class PlaybackPositionState(private val player: Player) {
     var playbackPosition by mutableStateOf(PlaybackPosition())
@@ -30,8 +34,8 @@ class PlaybackPositionState(private val player: Player) {
         ObservePlaybackPosition().observe(
             player = player,
             scope = scope,
-            onChanged = { position, duration ->
-                playbackPosition = PlaybackPosition(position, duration)
+            onChanged = { index, position, duration ->
+                playbackPosition = PlaybackPosition(index, position, duration)
             },
         )
     }

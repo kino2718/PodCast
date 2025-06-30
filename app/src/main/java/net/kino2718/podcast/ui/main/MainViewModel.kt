@@ -2,10 +2,12 @@ package net.kino2718.podcast.ui.main
 
 import android.app.Application
 import android.content.ComponentName
+import androidx.core.net.toUri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
@@ -14,8 +16,8 @@ import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.guava.await
 import kotlinx.coroutines.launch
@@ -33,27 +35,61 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val repo = Repository(appContext)
 
     private val lastPlayedItemIdFlow = repo.getLastPlayedItemIdFlow()
-        .mapNotNull { list ->
-            if (list.isNotEmpty()) list[0] else null
-        }
-
-    val lastPlayedItemFlow = lastPlayedItemIdFlow
-        .map {
-            val channel = repo.getChannelById(it.channelId)
-            val item = repo.getEpisodeById(it.episodeId)
-            if (channel == null || item == null) null
-            else PlayItem(channel = channel, episode = item, it.inPlaylist)
-        }
-        .stateIn(viewModelScope, SharingStarted.Lazily, null)
+    val showControl = lastPlayedItemIdFlow
+        .map { it != null }
+        .stateIn(viewModelScope, SharingStarted.Lazily, false)
 
     private val _playItemFlow = MutableStateFlow<PlayItem?>(null)
-    val playItemFlow = _playItemFlow.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            lastPlayedItemIdFlow.first()?.let { playItemId ->
+                val channel = repo.getChannelById(playItemId.channelId)
+                val item = repo.getEpisodeById(playItemId.episodeId)
+                if (channel != null && item != null) {
+                    val playItem =
+                        PlayItem(channel = channel, episode = item, playItemId.inPlaylist)
+                    MyLog.d(TAG, "inPlaylist = ${playItemId.inPlaylist}")
+                    _playItemFlow.value = playItem
+                    if (playItemId.inPlaylist) {
+                        repo.getPlaylistItems()
+                        val playItemList = repo.getPlaylistItems().mapNotNull {
+                            val channel = repo.getChannelById(it.channelId)
+                            val episode = repo.getEpisodeById(it.episodeId)
+                            if (channel != null && episode != null) {
+                                PlayItem(channel = channel, episode = episode, true)
+                            } else null
+                        }
+                        if (playItemList.isNotEmpty()) {
+                            val startIndex = playItemList.indexOfFirst {
+                                it.episode.id == item.id
+                            }.coerceAtLeast(0)
+                            setPlayer(playItemList, startIndex, false)
+                        } else {
+                            setPlayer(listOf(playItem), 0, false)
+                        }
+                    } else {
+                        setPlayer(listOf(playItem), 0, false)
+                    }
+                }
+            }
+        }
+    }
 
     fun setPlayItem(playItem: PlayItem) {
         viewModelScope.launch {
             val playItemWithId = addPlayItem(playItem)
             _playItemFlow.value = playItemWithId
-            setPlayer(playItemWithId)
+            setPlayer(listOf(playItemWithId), 0, true)
+        }
+    }
+
+    fun setPlayItems(playItemList: List<PlayItem>, startIndex: Int) {
+        viewModelScope.launch {
+            val startPlayItem = playItemList[startIndex]
+            val playItemWithId = addPlayItem(startPlayItem)
+            _playItemFlow.value = playItemWithId
+            setPlayer(playItemList, startIndex, true)
         }
     }
 
@@ -71,13 +107,39 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    private fun setPlayer(playItem: PlayItem) {
+    private var currentPlayItemIndex = -1
+    private var currentPlayItemList: List<PlayItem>? = null
+
+    private fun setPlayer(playItemList: List<PlayItem>, startIndex: Int, autoPlay: Boolean) {
         viewModelScope.launch {
-            val item = playItem.episode
+            currentPlayItemIndex = startIndex
+            currentPlayItemList = playItemList
+
+            val startEpisode = playItemList[startIndex].episode
             _audioPlayerFlow.value?.let { player ->
                 // posの値はdurationよりある程度小さくしないとExoPlayerから返ってくるdurationの値が異常に小さくなる
-                val pos = item.playbackPosition.coerceIn(0L, max(0L, item.duration - 100L))
-                setMediaItem(player, item.url, pos)
+                val pos = startEpisode.playbackPosition.coerceIn(
+                    0L, max(0L, startEpisode.duration - 100L)
+                )
+                val mediaItemList = playItemList.mapIndexed { i, playItem ->
+                    val channel = playItem.channel
+                    val episode = playItem.episode
+                    val metadata = MediaMetadata.Builder()
+                        .setTitle(episode.title)
+                        .setSubtitle(channel.title)
+                        .setArtist(episode.author)
+                        .setTrackNumber(i)
+                        .setTotalTrackCount(playItemList.size)
+                        .setArtworkUri(episode.imageUrl?.toUri())
+                        .build()
+                    MediaItem.Builder()
+                        .setUri(episode.url)
+                        .setMediaMetadata(metadata)
+                        .build()
+                }
+                player.setMediaItems(mediaItemList, startIndex, pos)
+                player.prepare()
+                if (autoPlay) player.play() else player.pause()
             }
         }
     }
@@ -101,18 +163,22 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         ObservePlaybackPosition().observe(
             player = player,
             scope = viewModelScope,
-            onChanged = { position, duration ->
+            onChanged = { index, position, duration ->
                 if (duration != C.TIME_UNSET) {
-                    val item1 = _playItemFlow.value?.episode
-                    item1?.let {
+                    currentPlayItemList?.getOrNull(index)?.let { currentPlayItem ->
+                        if (currentPlayItemIndex != index) {
+                            addPlayItem(currentPlayItem)
+                            currentPlayItemIndex = index
+                        }
+                        val episode1 = currentPlayItem.episode
                         val completed = abs(duration - position) < 2000 // 終了まで2秒以内なら再生完了とする
-                        val item2 = it.copy(
+                        val episode2 = episode1.copy(
                             playbackPosition = position,
                             duration = duration,
                             isPlaybackCompleted = completed,
                             lastPlayed = Clock.System.now(),
                         )
-                        repo.updateEpisode(item2)
+                        repo.updateEpisode(episode2)
                     }
                 }
             }
@@ -125,16 +191,18 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         _audioPlayerFlow.value = null
     }
 
-    private var lastUri: String? = null
-    private fun setMediaItem(player: Player, uri: String, pos: Long) {
-        MyLog.d(TAG, "setMediaItem: uri = $uri")
-        if (lastUri == uri) return
-        lastUri = uri
-        val mediaItem = MediaItem.fromUri(uri)
-        player.setMediaItem(mediaItem, pos)
-        player.prepare()
-        player.play()
-    }
+    /*
+        private var lastUri: String? = null
+        private fun setMediaItem(player: Player, uri: String, pos: Long) {
+            MyLog.d(TAG, "setMediaItem: uri = $uri")
+            if (lastUri == uri) return
+            lastUri = uri
+            val mediaItem = MediaItem.fromUri(uri)
+            player.setMediaItem(mediaItem, pos)
+            player.prepare()
+            player.play()
+        }
+    */
 
     override fun onCleared() {
         releasePlayer()

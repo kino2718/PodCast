@@ -81,8 +81,8 @@ interface PodCastDao {
     @Query("delete from PlayItemId")
     suspend fun deleteAllPlayItems()
 
-    @Query("select * from PlayItemId")
-    fun getLastPlayedItemIdFlow(): Flow<List<PlayItemId>>
+    @Query("select * from PlayItemId limit 1")
+    fun getLastPlayedItemIdFlow(): Flow<PlayItemId?>
 
     // PlayItemに含まれる channel, episode を登録する。
     // feedUrl と guid で同じデータが既に登録されているかを確認する。

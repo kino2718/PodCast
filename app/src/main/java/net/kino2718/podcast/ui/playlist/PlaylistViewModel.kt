@@ -42,4 +42,14 @@ class PlaylistViewModel(app: Application) : AndroidViewModel(app) {
             repo.deletePlaylistItem(playlistUIState.playlistItem)
         }
     }
+
+    suspend fun getPlayItemList(): List<PlayItem> {
+        return repo.getPlaylistItems().mapNotNull { playlistItem ->
+            val channel = repo.getChannelById(playlistItem.channelId)
+            val episode = repo.getEpisodeById(playlistItem.episodeId)
+            if (channel != null && episode != null)
+                PlayItem(channel = channel, episode = episode, true)
+            else null
+        }
+    }
 }

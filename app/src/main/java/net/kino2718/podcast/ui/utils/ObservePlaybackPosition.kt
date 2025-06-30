@@ -14,7 +14,7 @@ class ObservePlaybackPosition {
     suspend fun observe(
         player: Player,
         scope: CoroutineScope,
-        onChanged: suspend (position: Long, duration: Long) -> Unit,
+        onChanged: suspend (index: Int, position: Long, duration: Long) -> Unit,
     ): Nothing {
         pollingWhenPlaying(player, scope, onChanged)
 
@@ -36,14 +36,12 @@ class ObservePlaybackPosition {
     private suspend fun pollingWhenPlaying(
         player: Player,
         scope: CoroutineScope,
-        onChanged: suspend (position: Long, duration: Long) -> Unit,
+        onChanged: suspend (index: Int, position: Long, duration: Long) -> Unit,
     ) {
         if (player.isPlaying) {
-            run {
-                observationJob?.let { if (it.isActive) return@run } // 重複回避
-                observationJob = scope.launch {
-                    startObservationOfPlaybackPosition(player, onChanged)
-                }
+            observationJob?.let { if (it.isActive) return } // 重複回避
+            observationJob = scope.launch {
+                startObservationOfPlaybackPosition(player, onChanged)
             }
         } else {
             stopObservationOfPlaybackPosition(player, onChanged)
@@ -52,7 +50,7 @@ class ObservePlaybackPosition {
 
     private suspend fun CoroutineScope.startObservationOfPlaybackPosition(
         player: Player,
-        onChanged: suspend (position: Long, duration: Long) -> Unit,
+        onChanged: suspend (index: Int, position: Long, duration: Long) -> Unit,
     ) {
         while (isActive) {
             readPosition(player, onChanged)
@@ -66,7 +64,7 @@ class ObservePlaybackPosition {
 
     private suspend fun stopObservationOfPlaybackPosition(
         player: Player,
-        onChanged: suspend (position: Long, duration: Long) -> Unit
+        onChanged: suspend (index: Int, position: Long, duration: Long) -> Unit
     ) {
         readPosition(player, onChanged)
 
@@ -76,10 +74,11 @@ class ObservePlaybackPosition {
 
     private suspend fun readPosition(
         player: Player,
-        onRead: suspend (position: Long, duration: Long) -> Unit,
+        onRead: suspend (index: Int, position: Long, duration: Long) -> Unit,
     ) {
         val position = player.currentPosition
         val duration = player.duration
-        onRead(position, duration)
+        val index = player.currentMediaItemIndex
+        onRead(index, position, duration)
     }
 }

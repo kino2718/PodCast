@@ -21,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
@@ -29,16 +30,20 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.media3.common.C
 import coil.compose.AsyncImage
+import kotlinx.coroutines.launch
 import net.kino2718.podcast.R
+import net.kino2718.podcast.data.PlayItem
 import net.kino2718.podcast.ui.utils.format
 import net.kino2718.podcast.ui.utils.toHMS
 
 @Composable
 fun PlaylistScreen(
+    selectItems: (List<PlayItem>, Int) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: PlaylistViewModel = viewModel(),
 ) {
     val playlistUIStates by viewModel.playlistUIStatesFlow.collectAsState()
+    val scope = rememberCoroutineScope()
 
     Column(
         modifier = modifier
@@ -54,7 +59,12 @@ fun PlaylistScreen(
 
         ItemList(
             playlistUIStates,
-            selectItem = {},
+            selectItems = { playItemList, i ->
+                scope.launch {
+                    val newPlayItemList = viewModel.getPlayItemList()
+                    selectItems(newPlayItemList, i)
+                }
+            },
             deleteItem = viewModel::deleteItem,
         )
     }
@@ -90,16 +100,16 @@ private fun Header(
 
 @Composable
 private fun ItemList(
-    playlist: List<PlaylistUIState>,
-    selectItem: (PlaylistUIState) -> Unit,
+    playlistUIStates: List<PlaylistUIState>,
+    selectItems: (List<PlayItem>, Int) -> Unit,
     deleteItem: (PlaylistUIState) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(modifier = modifier.fillMaxSize()) {
-        itemsIndexed(playlist) { i, playlistUIState ->
+        itemsIndexed(playlistUIStates) { i, playlistUIState ->
             Item(
                 playlistUIState = playlistUIState,
-                selectItem = {},
+                selectItem = { selectItems(playlistUIStates.map { it.playItem }, i) },
                 deleteItem = deleteItem,
             )
         }
@@ -109,7 +119,7 @@ private fun ItemList(
 @Composable
 private fun Item(
     playlistUIState: PlaylistUIState,
-    selectItem: (PlaylistUIState) -> Unit,
+    selectItem: () -> Unit,
     deleteItem: (PlaylistUIState) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -122,7 +132,7 @@ private fun Item(
             modifier = modifier
                 .fillMaxWidth()
                 .padding(dimensionResource(R.dimen.padding_small))
-                .clickable { selectItem(playlistUIState) },
+                .clickable { selectItem() },
             horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.padding_small)),
             verticalAlignment = Alignment.CenterVertically,
         ) {
