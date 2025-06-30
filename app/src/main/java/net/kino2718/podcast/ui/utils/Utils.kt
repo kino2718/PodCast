@@ -1,6 +1,12 @@
 package net.kino2718.podcast.ui.utils
 
 import android.content.Context
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.fromHtml
+import androidx.compose.ui.text.style.TextDecoration
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
@@ -100,3 +106,16 @@ fun Long.toHMS(): String {
 }
 
 fun String.toHttps() = this.replaceFirst("http://", "https://")
+
+fun String.fromHtml(): AnnotatedString {
+    return AnnotatedString.fromHtml(
+        htmlString = this,
+        linkStyles = TextLinkStyles(
+            style = SpanStyle(
+                textDecoration = TextDecoration.Underline,
+                fontStyle = FontStyle.Italic,
+//                        color = Color.Blue
+            )
+        )
+    )
+}

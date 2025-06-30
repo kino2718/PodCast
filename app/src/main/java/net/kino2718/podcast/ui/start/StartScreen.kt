@@ -5,6 +5,7 @@ import androidx.compose.ui.Modifier
 import net.kino2718.podcast.data.PlayItem
 import net.kino2718.podcast.ui.home.HomeScreen
 import net.kino2718.podcast.ui.main.NavItem
+import net.kino2718.podcast.ui.now_playing.NowPlayingScreen
 import net.kino2718.podcast.ui.playlist.PlaylistScreen
 import net.kino2718.podcast.ui.search.SearchScreen
 
@@ -31,5 +32,7 @@ fun StartScreen(
         NavItem.PLAYLIST -> PlaylistScreen(
             selectItems = selectItems,
         )
+
+        NavItem.NOW_PLAYING -> NowPlayingScreen()
     }
 }

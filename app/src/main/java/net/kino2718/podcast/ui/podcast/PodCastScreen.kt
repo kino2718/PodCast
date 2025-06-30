@@ -40,6 +40,7 @@ import net.kino2718.podcast.data.Episode
 import net.kino2718.podcast.data.PChannel
 import net.kino2718.podcast.data.PlayItem
 import net.kino2718.podcast.ui.utils.format
+import net.kino2718.podcast.ui.utils.fromHtml
 import net.kino2718.podcast.ui.utils.toHMS
 import net.kino2718.podcast.ui.utils.toHttps
 import net.kino2718.podcast.utils.MyLog
@@ -144,7 +145,7 @@ private fun Channel(
         }
 
         Text(
-            text = channel.description,
+            text = channel.description.fromHtml(),
             modifier = Modifier.padding(dimensionResource(R.dimen.padding_small)),
             maxLines = 5,
             overflow = TextOverflow.Ellipsis,
