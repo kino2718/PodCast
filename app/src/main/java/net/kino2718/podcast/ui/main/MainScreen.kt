@@ -90,7 +90,8 @@ fun MainScreen(
                     podCastDestination.feedUrl,
                     selectPlayItem = {
                         viewModel.setPlayItem(it)
-                    }
+                    },
+                    download = viewModel::download,
                 )
             }
         }

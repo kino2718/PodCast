@@ -7,12 +7,14 @@ import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.fromHtml
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.core.net.toUri
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toKotlinInstant
 import kotlinx.datetime.toLocalDateTime
 import net.kino2718.podcast.R
+import java.io.File
 import java.text.NumberFormat
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
@@ -118,4 +120,9 @@ fun String.fromHtml(): AnnotatedString {
             )
         )
     )
+}
+
+fun String.getExtensionFromUrl(): String? {
+    val path = this.toUri().path ?: return null
+    return File(path).extension.takeIf { it.isNotEmpty() }
 }

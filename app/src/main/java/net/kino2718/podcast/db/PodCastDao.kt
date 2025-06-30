@@ -14,6 +14,7 @@ import net.kino2718.podcast.data.PlayItem
 import net.kino2718.podcast.data.PlayItemId
 import net.kino2718.podcast.data.PlaylistItem
 import net.kino2718.podcast.data.PodCast
+import net.kino2718.podcast.utils.MyLog
 
 @Dao
 interface PodCastDao {
@@ -88,7 +89,11 @@ interface PodCastDao {
     // feedUrl と guid で同じデータが既に登録されているかを確認する。
     // 登録されていたらidと状態以外を更新する。
     @Transaction
-    suspend fun addPlayItem(playItem: PlayItem): PlayItem {
+    suspend fun upsertCurrentPlayItem(playItem: PlayItem): PlayItem {
+        MyLog.d(
+            TAG,
+            "upsertCurrentPlayItem: title = ${playItem.episode.title}, downloadFile =${playItem.episode.downloadFile}"
+        )
         val playItemWithTime = playItem.copy(
             channel = playItem.channel,
             episode = playItem.episode.copy(lastPlayed = Clock.System.now())
@@ -134,7 +139,7 @@ interface PodCastDao {
         upsertPlaylistItem(playlistItem)
     }
 
-    private suspend fun upsertPlayItem(playItem: PlayItem): PlayItem {
+    suspend fun upsertPlayItem(playItem: PlayItem): PlayItem {
         val channel1 = playItem.channel
         // feedUrlで既に登録されているかを調べる。
         val channel2 = getChannelByFeedUrl(channel1.feedUrl)
@@ -158,6 +163,7 @@ interface PodCastDao {
             episode2?.let {
                 episode1.copy(
                     id = it.id,
+                    downloadFile = it.downloadFile,
                     playbackPosition = it.playbackPosition,
                     duration = it.duration,
                     lastPlayed = it.lastPlayed

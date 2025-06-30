@@ -81,4 +81,9 @@ class ObservePlaybackPosition {
         val index = player.currentMediaItemIndex
         onRead(index, position, duration)
     }
+
+    companion object {
+        @Suppress("unused")
+        private const val TAG = "ObservePlaybackPosition"
+    }
 }

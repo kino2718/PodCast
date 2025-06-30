@@ -13,6 +13,7 @@ import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,7 +27,13 @@ import net.kino2718.podcast.data.PlayItem
 import net.kino2718.podcast.data.Repository
 import net.kino2718.podcast.service.PlaybackService
 import net.kino2718.podcast.ui.utils.ObservePlaybackPosition
+import net.kino2718.podcast.ui.utils.getExtensionFromUrl
 import net.kino2718.podcast.utils.MyLog
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
 import kotlin.math.abs
 import kotlin.math.max
 
@@ -78,7 +85,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setPlayItem(playItem: PlayItem) {
         viewModelScope.launch {
-            val playItemWithId = addPlayItem(playItem)
+            val playItemWithId = setCurrentPlayItem(playItem)
             _playItemFlow.value = playItemWithId
             setPlayer(listOf(playItemWithId), 0, true)
         }
@@ -87,14 +94,65 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun setPlayItems(playItemList: List<PlayItem>, startIndex: Int) {
         viewModelScope.launch {
             val startPlayItem = playItemList[startIndex]
-            val playItemWithId = addPlayItem(startPlayItem)
+            val playItemWithId = setCurrentPlayItem(startPlayItem)
             _playItemFlow.value = playItemWithId
             setPlayer(playItemList, startIndex, true)
         }
     }
 
-    private suspend fun addPlayItem(playItem: PlayItem): PlayItem {
-        return repo.addPlayItem(playItem)
+    fun download(playItem: PlayItem) {
+        viewModelScope.launch(Dispatchers.IO) {
+            // データベースから読み直す
+            val episode1 = repo.getEpisodeByGuid(playItem.episode.guid) ?: run {
+                // まだ登録されていなければ登録する
+                val playItem2 = repo.setPlayItem(playItem)
+                playItem2.episode
+            }
+            // urlから拡張子を取得する
+            episode1.url.getExtensionFromUrl()?.let { ext ->
+                // episode idからファイル名を作成
+                val fName = "${episode1.id}.$ext"
+                val destFile = File(appContext.filesDir, fName)
+                if (downloadFile(episode1.url, destFile)) {
+                    val episode2 = episode1.copy(
+                        downloadFile = destFile.absolutePath
+                    )
+                    repo.updateEpisode(episode2)
+                }
+            }
+        }
+    }
+
+    private fun downloadFile(url: String, destFile: File): Boolean {
+        val client = OkHttpClient()
+
+        val request = Request.Builder()
+            .url(url)
+            .build()
+
+        client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) {
+                MyLog.e(TAG, "Failed to download file: ${response.code}")
+                return false
+            }
+
+            val body = response.body ?: return false
+            try {
+                val sink = FileOutputStream(destFile)
+                sink.use { output ->
+                    output.write(body.bytes())
+                }
+                MyLog.d(TAG, "File downloaded to ${destFile.absolutePath}")
+                return true
+            } catch (e: IOException) {
+                MyLog.e(TAG, "Error saving file: ${e.message}")
+                return false
+            }
+        }
+    }
+
+    private suspend fun setCurrentPlayItem(playItem: PlayItem): PlayItem {
+        return repo.setCurrentPlayItem(playItem)
     }
 
     private var controllerFuture: ListenableFuture<MediaController>? = null
@@ -132,8 +190,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                         .setTotalTrackCount(playItemList.size)
                         .setArtworkUri(episode.imageUrl?.toUri())
                         .build()
+                    val url = episode.downloadFile?.toUri()?.path ?: episode.url
                     MediaItem.Builder()
-                        .setUri(episode.url)
+                        .setUri(url)
                         .setMediaMetadata(metadata)
                         .build()
                 }
@@ -167,7 +226,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 if (duration != C.TIME_UNSET) {
                     currentPlayItemList?.getOrNull(index)?.let { currentPlayItem ->
                         if (currentPlayItemIndex != index) {
-                            addPlayItem(currentPlayItem)
+                            setCurrentPlayItem(currentPlayItem)
                             currentPlayItemIndex = index
                         }
                         val episode1 = currentPlayItem.episode

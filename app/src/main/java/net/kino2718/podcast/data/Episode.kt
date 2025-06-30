@@ -31,7 +31,8 @@ data class Episode(
     val pubDate: Instant? = null,
     // 未再生の時はrssから、再生した後はplayerの情報から得る。
     val duration: Long = 0L,// itunes:durationから milli sec
-    // 以下は再生状態
+    // 以下は状態
+    val downloadFile: String? = null,
     val playbackPosition: Long = 0L, // milli sec
     val isPlaybackCompleted: Boolean = false,
     val lastPlayed: Instant? = null,
@@ -48,6 +49,7 @@ data class Episode(
         var imageUrl: String? = null,
         var pubDate: Instant? = null,
         var duration: Long = 0L,
+        var downloadFile: String? = null,
         var playbackPosition: Long = 0L,
         var isPlaybackCompleted: Boolean = false,
         var lastPlayed: Instant? = null,
@@ -65,6 +67,7 @@ data class Episode(
                 imageUrl = imageUrl,
                 pubDate = pubDate,
                 duration = duration,
+                downloadFile = downloadFile,
                 playbackPosition = playbackPosition,
                 isPlaybackCompleted = isPlaybackCompleted,
                 lastPlayed = lastPlayed,

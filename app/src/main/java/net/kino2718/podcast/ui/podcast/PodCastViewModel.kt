@@ -45,6 +45,7 @@ class PodCastViewModel(app: Application) : AndroidViewModel(app) {
                     itemFromSearch.copy(
                         id = foundItem.id,
                         channelId = foundItem.channelId,
+                        downloadFile = foundItem.downloadFile,
                         playbackPosition = foundItem.playbackPosition,
                         duration = foundItem.duration,
                         isPlaybackCompleted = foundItem.isPlaybackCompleted,

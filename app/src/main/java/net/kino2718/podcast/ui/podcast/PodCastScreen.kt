@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -49,6 +50,7 @@ import net.kino2718.podcast.utils.MyLog
 fun PodCastScreen(
     feedUrl: String,
     selectPlayItem: (PlayItem) -> Unit,
+    download: (PlayItem) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: PodCastViewModel = viewModel()
 ) {
@@ -80,7 +82,13 @@ fun PodCastScreen(
                         val playItem = PlayItem(channel = state.podCast.channel, episode = episode)
                         viewModel.addToPlaylist(playItem)
                     }
-                }
+                },
+                download = { episode ->
+                    uiState?.let { state ->
+                        val playItem = PlayItem(channel = state.podCast.channel, episode = episode)
+                        download(playItem)
+                    }
+                },
             )
         }
     }
@@ -159,6 +167,7 @@ private fun ItemList(
     uiState: PodCastUIState,
     selectItem: (Episode) -> Unit,
     addPlaylist: (Episode) -> Unit,
+    download: (Episode) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -169,6 +178,7 @@ private fun ItemList(
                 episode = it,
                 selectItem = selectItem,
                 addPlayList = addPlaylist,
+                download = download,
             )
         }
     }
@@ -179,6 +189,7 @@ private fun Item(
     episode: Episode,
     selectItem: (Episode) -> Unit,
     addPlayList: (Episode) -> Unit,
+    download: (Episode) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Card(
@@ -202,6 +213,8 @@ private fun Item(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = episode.title,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.titleMedium,
                 )
                 Row {
@@ -229,9 +242,20 @@ private fun Item(
             }
             IconButton(
                 onClick = { addPlayList(episode) },
+                modifier = Modifier.size(dimensionResource(R.dimen.icon_button_small))
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.PlaylistAdd,
+                    contentDescription = null,
+                    modifier = Modifier.size(dimensionResource(R.dimen.icon_small)),
+                )
+            }
+            IconButton(
+                onClick = { download(episode) },
+                modifier = Modifier.size(dimensionResource(R.dimen.icon_button_small))
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Download,
                     contentDescription = null,
                     modifier = Modifier.size(dimensionResource(R.dimen.icon_small)),
                 )
