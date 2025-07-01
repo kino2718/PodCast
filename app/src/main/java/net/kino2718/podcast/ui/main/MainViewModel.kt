@@ -41,6 +41,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val appContext = app.applicationContext
     private val repo = Repository(appContext)
 
+    private var controllerFuture: ListenableFuture<MediaController>? = null
+    private var _audioPlayerFlow = MutableStateFlow<Player?>(null)
+    val audioPlayerFlow = _audioPlayerFlow.asStateFlow()
+
     private val lastPlayedItemIdFlow = repo.getLastPlayedItemIdFlow()
     val showControl = lastPlayedItemIdFlow
         .map { it != null }
@@ -50,34 +54,85 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     init {
         viewModelScope.launch {
-            lastPlayedItemIdFlow.first()?.let { playItemId ->
-                val channel = repo.getChannelById(playItemId.channelId)
-                val item = repo.getEpisodeById(playItemId.episodeId)
-                if (channel != null && item != null) {
-                    val playItem =
-                        PlayItem(channel = channel, episode = item, playItemId.inPlaylist)
-                    MyLog.d(TAG, "inPlaylist = ${playItemId.inPlaylist}")
-                    _playItemFlow.value = playItem
-                    if (playItemId.inPlaylist) {
-                        repo.getPlaylistItems()
-                        val playItemList = repo.getPlaylistItems().mapNotNull {
-                            val channel = repo.getChannelById(it.channelId)
-                            val episode = repo.getEpisodeById(it.episodeId)
-                            if (channel != null && episode != null) {
-                                PlayItem(channel = channel, episode = episode, true)
-                            } else null
+            initializePlayer()
+            // この段階では_audioPlayerFlowは上記関数によって設定されている
+            initializeController()
+        }
+    }
+
+    private suspend fun initializePlayer() {
+        val sessionToken =
+            SessionToken(appContext, ComponentName(appContext, PlaybackService::class.java))
+        val future = MediaController.Builder(appContext, sessionToken).buildAsync()
+        val player = future.await()
+
+        player.addListener(object : Player.Listener {
+            override fun onPlayerError(error: PlaybackException) {
+                MyLog.d(TAG, "uri: ${player.currentMediaItem?.localConfiguration?.uri}")
+                MyLog.d(TAG, "tag: ${player.currentMediaItem?.localConfiguration?.tag}")
+            }
+        })
+
+        controllerFuture = future
+        _audioPlayerFlow.value = player
+
+        // observeは戻ってこないのでlaunchで別コルーチンとする
+        viewModelScope.launch {
+            ObservePlaybackPosition().observe(
+                player = player,
+                scope = viewModelScope,
+                onChanged = { index, position, duration ->
+                    if (duration != C.TIME_UNSET) {
+                        currentPlayItemList?.getOrNull(index)?.let { currentPlayItem ->
+                            if (currentPlayItemIndex != index) {
+                                repo.setCurrentPlayItem(currentPlayItem)
+                                currentPlayItemIndex = index
+                            }
+                            val episode1 = currentPlayItem.episode
+                            val completed = abs(duration - position) < 2000 // 終了まで2秒以内なら再生完了とする
+                            val episode2 = episode1.copy(
+                                playbackPosition = position,
+                                duration = duration,
+                                isPlaybackCompleted = completed,
+                                lastPlayed = Clock.System.now(),
+                            )
+                            repo.updateEpisode(episode2)
                         }
-                        if (playItemList.isNotEmpty()) {
-                            val startIndex = playItemList.indexOfFirst {
-                                it.episode.id == item.id
-                            }.coerceAtLeast(0)
-                            setPlayer(playItemList, startIndex, false)
-                        } else {
-                            setPlayer(listOf(playItem), 0, false)
-                        }
+                    }
+                }
+            )
+        }
+    }
+
+    private suspend fun initializeController() {
+        // 初期設定なので最初の1つだけ取り出しplayerに設定する。
+        lastPlayedItemIdFlow.first()?.let { playItemId ->
+            val channel = repo.getChannelById(playItemId.channelId)
+            val item = repo.getEpisodeById(playItemId.episodeId)
+            if (channel != null && item != null) {
+                val playItem =
+                    PlayItem(channel = channel, episode = item, playItemId.inPlaylist)
+                MyLog.d(TAG, "inPlaylist = ${playItemId.inPlaylist}")
+                _playItemFlow.value = playItem
+                if (playItemId.inPlaylist) {
+                    repo.getPlaylistItems()
+                    val playItemList = repo.getPlaylistItems().mapNotNull {
+                        val channel = repo.getChannelById(it.channelId)
+                        val episode = repo.getEpisodeById(it.episodeId)
+                        if (channel != null && episode != null) {
+                            PlayItem(channel = channel, episode = episode, true)
+                        } else null
+                    }
+                    if (playItemList.isNotEmpty()) {
+                        val startIndex = playItemList.indexOfFirst {
+                            it.episode.id == item.id
+                        }.coerceAtLeast(0)
+                        setPlayer(playItemList, startIndex, false)
                     } else {
                         setPlayer(listOf(playItem), 0, false)
                     }
+                } else {
+                    setPlayer(listOf(playItem), 0, false)
                 }
             }
         }
@@ -85,7 +140,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setPlayItem(playItem: PlayItem) {
         viewModelScope.launch {
-            val playItemWithId = setCurrentPlayItem(playItem)
+            val playItemWithId = repo.setCurrentPlayItem(playItem)
             _playItemFlow.value = playItemWithId
             setPlayer(listOf(playItemWithId), 0, true)
         }
@@ -94,7 +149,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun setPlayItems(playItemList: List<PlayItem>, startIndex: Int) {
         viewModelScope.launch {
             val startPlayItem = playItemList[startIndex]
-            val playItemWithId = setCurrentPlayItem(startPlayItem)
+            val playItemWithId = repo.setCurrentPlayItem(startPlayItem)
             _playItemFlow.value = playItemWithId
             setPlayer(playItemList, startIndex, true)
         }
@@ -102,22 +157,17 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun download(playItem: PlayItem) {
         viewModelScope.launch(Dispatchers.IO) {
-            // データベースから読み直す
-            val episode1 = repo.getEpisodeByGuid(playItem.episode.guid) ?: run {
-                // まだ登録されていなければ登録する
-                val playItem2 = repo.setPlayItem(playItem)
-                playItem2.episode
-            }
+            val episode = playItem.episode
             // urlから拡張子を取得する
-            episode1.url.getExtensionFromUrl()?.let { ext ->
+            episode.url.getExtensionFromUrl()?.let { ext ->
                 // episode idからファイル名を作成
-                val fName = "${episode1.id}.$ext"
+                val fName = "${episode.id}.$ext"
                 val destFile = File(appContext.filesDir, fName)
-                if (downloadFile(episode1.url, destFile)) {
-                    val episode2 = episode1.copy(
+                if (downloadFile(episode.url, destFile)) {
+                    val episode2 = episode.copy(
                         downloadFile = destFile.absolutePath
                     )
-                    repo.updateEpisode(episode2)
+                    repo.setPlayItem(playItem.copy(episode = episode2))
                 }
             }
         }
@@ -138,9 +188,15 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
             val body = response.body ?: return false
             try {
-                val sink = FileOutputStream(destFile)
-                sink.use { output ->
-                    output.write(body.bytes())
+                // バッファを使ってストリームから直接読み込み、ファイルへ書き出す
+                body.byteStream().use { input ->
+                    FileOutputStream(destFile).use { output ->
+                        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                        var bytesRead: Int
+                        while (input.read(buffer).also { bytesRead = it } >= 0) {
+                            output.write(buffer, 0, bytesRead)
+                        }
+                    }
                 }
                 MyLog.d(TAG, "File downloaded to ${destFile.absolutePath}")
                 return true
@@ -148,20 +204,6 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 MyLog.e(TAG, "Error saving file: ${e.message}")
                 return false
             }
-        }
-    }
-
-    private suspend fun setCurrentPlayItem(playItem: PlayItem): PlayItem {
-        return repo.setCurrentPlayItem(playItem)
-    }
-
-    private var controllerFuture: ListenableFuture<MediaController>? = null
-    private var _audioPlayerFlow = MutableStateFlow<Player?>(null)
-    val audioPlayerFlow = _audioPlayerFlow.asStateFlow()
-
-    init {
-        viewModelScope.launch {
-            initializePlayer()
         }
     }
 
@@ -201,47 +243,6 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 if (autoPlay) player.play() else player.pause()
             }
         }
-    }
-
-    private suspend fun initializePlayer() {
-        val sessionToken =
-            SessionToken(appContext, ComponentName(appContext, PlaybackService::class.java))
-        val future = MediaController.Builder(appContext, sessionToken).buildAsync()
-        val player = future.await()
-
-        player.addListener(object : Player.Listener {
-            override fun onPlayerError(error: PlaybackException) {
-                MyLog.d(TAG, "uri: ${player.currentMediaItem?.localConfiguration?.uri}")
-                MyLog.d(TAG, "tag: ${player.currentMediaItem?.localConfiguration?.tag}")
-            }
-        })
-
-        controllerFuture = future
-        _audioPlayerFlow.value = player
-
-        ObservePlaybackPosition().observe(
-            player = player,
-            scope = viewModelScope,
-            onChanged = { index, position, duration ->
-                if (duration != C.TIME_UNSET) {
-                    currentPlayItemList?.getOrNull(index)?.let { currentPlayItem ->
-                        if (currentPlayItemIndex != index) {
-                            setCurrentPlayItem(currentPlayItem)
-                            currentPlayItemIndex = index
-                        }
-                        val episode1 = currentPlayItem.episode
-                        val completed = abs(duration - position) < 2000 // 終了まで2秒以内なら再生完了とする
-                        val episode2 = episode1.copy(
-                            playbackPosition = position,
-                            duration = duration,
-                            isPlaybackCompleted = completed,
-                            lastPlayed = Clock.System.now(),
-                        )
-                        repo.updateEpisode(episode2)
-                    }
-                }
-            }
-        )
     }
 
     private fun releasePlayer() {

@@ -8,13 +8,12 @@ import androidx.room.Update
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Clock
+import net.kino2718.podcast.data.CurrentPlayItemId
 import net.kino2718.podcast.data.Episode
 import net.kino2718.podcast.data.PChannel
 import net.kino2718.podcast.data.PlayItem
-import net.kino2718.podcast.data.PlayItemId
 import net.kino2718.podcast.data.PlaylistItem
 import net.kino2718.podcast.data.PodCast
-import net.kino2718.podcast.utils.MyLog
 
 @Dao
 interface PodCastDao {
@@ -64,36 +63,23 @@ interface PodCastDao {
     @Query("select * from Episode where id = :id")
     suspend fun getEpisodeById(id: Long): Episode?
 
-    @Query("select * from Episode where guid = :guid")
-    suspend fun getEpisodeByGuid(guid: String): Episode?
-
     @Query("select * from Episode where (lastPlayed is not null) and (isPlaybackCompleted = false) order by lastPlayed desc limit :limits")
     suspend fun getRecentEpisodes(limits: Int): List<Episode>
 
     @Upsert
-    suspend fun upsertPlayItemId(item: PlayItemId): Long
+    suspend fun upsertPlayItemId(item: CurrentPlayItemId): Long
 
-    suspend fun safeUpsertPlayItemId(item: PlayItemId): Long {
-        val prevId = item.id
-        val id = upsertPlayItemId(item)
-        return if (0 < id) id else prevId
-    }
-
-    @Query("delete from PlayItemId")
+    @Query("delete from CurrentPlayItemId")
     suspend fun deleteAllPlayItems()
 
-    @Query("select * from PlayItemId limit 1")
-    fun getLastPlayedItemIdFlow(): Flow<PlayItemId?>
+    @Query("select * from CurrentPlayItemId limit 1")
+    fun getLastPlayedItemIdFlow(): Flow<CurrentPlayItemId?>
 
     // PlayItemに含まれる channel, episode を登録する。
     // feedUrl と guid で同じデータが既に登録されているかを確認する。
     // 登録されていたらidと状態以外を更新する。
     @Transaction
     suspend fun upsertCurrentPlayItem(playItem: PlayItem): PlayItem {
-        MyLog.d(
-            TAG,
-            "upsertCurrentPlayItem: title = ${playItem.episode.title}, downloadFile =${playItem.episode.downloadFile}"
-        )
         val playItemWithTime = playItem.copy(
             channel = playItem.channel,
             episode = playItem.episode.copy(lastPlayed = Clock.System.now())
@@ -101,13 +87,12 @@ interface PodCastDao {
         val savedPlayItem = upsertPlayItem(playItemWithTime)
 
         // 現在再生しているPlayItemを登録する。
-        val playItemId =
-            PlayItemId(
-                channelId = savedPlayItem.channel.id,
-                episodeId = savedPlayItem.episode.id,
-                inPlaylist = savedPlayItem.inPlaylist,
-            )
-        safeUpsertPlayItemId(playItemId)
+        val currentPlayItemId = CurrentPlayItemId(
+            channelId = savedPlayItem.channel.id,
+            episodeId = savedPlayItem.episode.id,
+            inPlaylist = savedPlayItem.inPlaylist,
+        )
+        upsertPlayItemId(currentPlayItemId)
         return savedPlayItem
     }
 
@@ -140,42 +125,15 @@ interface PodCastDao {
     }
 
     suspend fun upsertPlayItem(playItem: PlayItem): PlayItem {
-        val channel1 = playItem.channel
-        // feedUrlで既に登録されているかを調べる。
-        val channel2 = getChannelByFeedUrl(channel1.feedUrl)
-        // 登録されていたらidと状態取得する。そうでなければそのまま。
-        val channel3 = channel2?.let {
-            channel1.copy(
-                id = it.id,
-                subscribed = it.subscribed,
-                lastUpdate = it.lastUpdate,
-            )
-        } ?: channel1
-        // 登録されていたらid以外は新しいデータで置き換える。そうでなければそのまま。
-        val channelId = safeUpsertChannel(channel3)
-        val channel = channel3.copy(id = channelId)
+        val channel = playItem.channel
+        val channelId = safeUpsertChannel(channel)
+        val upsertedChannel = channel.copy(id = channelId)
 
-        val episode1 = playItem.episode
-        // guidで既に登録されているかを調べる。
-        val episode2 = getEpisodeByGuid(episode1.guid)
-        // 登録されていたらid, 状態を取得する。そうでなければそのまま。
-        val episode3 =
-            episode2?.let {
-                episode1.copy(
-                    id = it.id,
-                    downloadFile = it.downloadFile,
-                    playbackPosition = it.playbackPosition,
-                    duration = it.duration,
-                    lastPlayed = it.lastPlayed
-                )
-            } ?: episode1
-        // channelIdをコピーする。
-        val episode4 = episode3.copy(channelId = channelId)
-        // 登録されていたらid以外は新しいデータで置き換える。そうでなければそのまま。
-        val episodeId = safeUpsertEpisode(episode4)
-        val item = episode4.copy(id = episodeId)
+        val episode = playItem.episode.copy(channelId = channelId)
+        val episodeId = safeUpsertEpisode(episode)
+        val upsertedEpisode = episode.copy(id = episodeId)
 
-        return PlayItem(channel = channel, episode = item, playItem.inPlaylist)
+        return PlayItem(channel = upsertedChannel, episode = upsertedEpisode, playItem.inPlaylist)
     }
 
     @Query("select * from PChannel where feedUrl = :feedUrl")

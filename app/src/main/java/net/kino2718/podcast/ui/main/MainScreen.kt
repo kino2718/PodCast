@@ -88,9 +88,7 @@ fun MainScreen(
                 val podCastDestination = navBackStackEntry.toRoute<PodCastDestination>()
                 PodCastScreen(
                     podCastDestination.feedUrl,
-                    selectPlayItem = {
-                        viewModel.setPlayItem(it)
-                    },
+                    selectPlayItem = viewModel::setPlayItem,
                     download = viewModel::download,
                 )
             }

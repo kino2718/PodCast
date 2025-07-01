@@ -20,7 +20,7 @@ import androidx.room.PrimaryKey
         )
     ]
 )
-data class PlayItemId(
+data class CurrentPlayItemId(
     @PrimaryKey(autoGenerate = true) val id: Long = 0L,
     val channelId: Long = 0L,
     val episodeId: Long = 0L,
