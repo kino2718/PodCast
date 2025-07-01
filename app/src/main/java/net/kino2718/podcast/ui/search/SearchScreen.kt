@@ -23,7 +23,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -41,7 +40,7 @@ private const val TAG = "SearchScreen"
 
 @Composable
 fun SearchScreen(
-    select: (String) -> Unit,
+    selectFeedUrl: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SearchViewModel = viewModel()
 ) {
@@ -84,7 +83,7 @@ fun SearchScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(dimensionResource(R.dimen.padding_small))
-                            .clickable { select(podcastState.feedUrl) },
+                            .clickable { selectFeedUrl(podcastState.feedUrl) },
                         horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.padding_small)),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {

@@ -4,8 +4,10 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -24,37 +26,40 @@ class PodCastViewModel(app: Application) : AndroidViewModel(app) {
 
     private val podCastFlowFromSearch = MutableSharedFlow<PodCast>()
 
-    val uiState = podCastFlowFromSearch.map { fromSearch ->
-        val fromDb = repo.getPodCastByFeedUrl(fromSearch.channel.feedUrl)
-        // このpodcastはdatabaseには存在しない。
-        if (fromDb == null) return@map PodCastUIState(fromSearch)
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val uiState = podCastFlowFromSearch.flatMapLatest { fromSearch ->
+        // databaseに存在するか確認
+        repo.getPodCastByFeedUrlFlow(fromSearch.channel.feedUrl).map { fromDb ->
+            fromDb?.let {
+                // databaseに存在する。channelのidと状態をコピーする。
+                val fromDbChannel = fromDb.channel
+                val newChannel = fromSearch.channel.copy(
+                    id = fromDbChannel.id,
+                    subscribed = fromDbChannel.subscribed,
+                )
+                // dbからのitemのidと状態をコピーする。
+                val episodeListFromSearch = fromSearch.episodeList
+                val episodeListFromDb = fromDb.episodeList
+                val newItemList = episodeListFromSearch.map { itemFromSearch ->
+                    episodeListFromDb.find { itemFromDb -> itemFromSearch.guid == itemFromDb.guid }
+                        ?.let { foundItem ->
+                            itemFromSearch.copy(
+                                id = foundItem.id,
+                                channelId = foundItem.channelId,
+                                downloadFile = foundItem.downloadFile,
+                                playbackPosition = foundItem.playbackPosition,
+                                duration = foundItem.duration,
+                                isPlaybackCompleted = foundItem.isPlaybackCompleted,
+                            )
+                        } ?: itemFromSearch
+                }
+                PodCastUIState(
+                    fromSearch.copy(channel = newChannel, episodeList = newItemList)
+                )
 
-        // dbからのchannelのidを状態をコピーする。
-        val fromDbChannel = fromDb.channel
-        val newChannel = fromSearch.channel.copy(
-            id = fromDbChannel.id,
-            subscribed = fromDbChannel.subscribed,
-            lastUpdate = fromDbChannel.lastUpdate
-        )
-        // dbからのitemのidと状態をコピーする。
-        val itemListFromSearch = fromSearch.episodeList
-        val itemListFromDb = fromDb.episodeList
-        val newItemList = itemListFromSearch.map { itemFromSearch ->
-            itemListFromDb.find { itemFromDb -> itemFromSearch.guid == itemFromDb.guid }
-                ?.let { foundItem ->
-                    itemFromSearch.copy(
-                        id = foundItem.id,
-                        channelId = foundItem.channelId,
-                        downloadFile = foundItem.downloadFile,
-                        playbackPosition = foundItem.playbackPosition,
-                        duration = foundItem.duration,
-                        isPlaybackCompleted = foundItem.isPlaybackCompleted,
-                    )
-                } ?: itemFromSearch
+            } ?: PodCastUIState(podCast = fromSearch) // このpodcastはdatabaseには存在しない。
         }
-        PodCastUIState(
-            fromSearch.copy(channel = newChannel, episodeList = newItemList)
-        )
+
     }.stateIn(viewModelScope, SharingStarted.Lazily, null)
 
     // Urlからrssを読み解析してPodCastオブジェクトを作成してflowに流す。

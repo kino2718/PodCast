@@ -28,9 +28,10 @@ fun loadRss(feedUrl: String): PodCast? {
                     val episodes = podCast.episodeList.map { episode ->
                         if (episode.imageUrl == null) episode.copy(imageUrl = podCast.channel.imageUrl) else episode
                     }
-                    podCast.copy(episodeList = episodes)
+                    // 最新のepisodeの発行日付をchannelに設定
+                    val latestPubDate = episodes.getOrNull(0)?.pubDate
+                    podCast.copy(channel = podCast.channel.copy(lastUpdate = latestPubDate), episodeList = episodes)
                 }
-
             }
         } else null
     }

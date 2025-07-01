@@ -76,7 +76,7 @@ fun MainScreen(
             composable<StartDestination> {
                 StartScreen(
                     navItem = current,
-                    select = {
+                    selectFeedUrl = {
                         val podCastDestination = PodCastDestination(feedUrl = it)
                         navController.navigate(podCastDestination)
                     },

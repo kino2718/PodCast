@@ -17,9 +17,7 @@ class Repository(context: Context) {
         return podCastDao.upsertCurrentPlayItem(playItem)
     }
 
-    suspend fun addToPlaylist(playItem: PlayItem) {
-        podCastDao.addToPlaylist(playItem)
-    }
+    suspend fun addToPlaylist(playItem: PlayItem) = podCastDao.addToPlaylist(playItem)
 
     private suspend fun deleteAllPlayItem() = podCastDao.deleteAllPlayItems()
 
@@ -28,7 +26,7 @@ class Repository(context: Context) {
     suspend fun getEpisodeByGuid(guid: String) = podCastDao.getEpisodeByGuid(guid)
     fun getLastPlayedItemIdFlow() = podCastDao.getLastPlayedItemIdFlow()
     suspend fun updateEpisode(episode: Episode) = podCastDao.updateEpisode(episode)
-    suspend fun getPodCastByFeedUrl(feedUrl: String) = podCastDao.getPodCastByFeedUrl(feedUrl)
+    fun getPodCastByFeedUrlFlow(feedUrl: String) = podCastDao.getPodCastByFeedUrlFlow(feedUrl)
     fun subscribedChannelFlow() = podCastDao.subscribedChannelFlow()
     suspend fun subscribedChannels() = podCastDao.subscribedChannels()
     suspend fun getRecentPlays(limits: Int) = podCastDao.getRecentPlays(limits)

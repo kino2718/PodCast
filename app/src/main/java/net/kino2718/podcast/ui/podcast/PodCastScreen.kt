@@ -25,9 +25,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
@@ -44,7 +41,6 @@ import net.kino2718.podcast.ui.utils.format
 import net.kino2718.podcast.ui.utils.fromHtml
 import net.kino2718.podcast.ui.utils.toHMS
 import net.kino2718.podcast.ui.utils.toHttps
-import net.kino2718.podcast.utils.MyLog
 
 @Composable
 fun PodCastScreen(
@@ -69,9 +65,9 @@ fun PodCastScreen(
                 uiState = it,
                 subscribe = viewModel::subscribe,
             )
-            ItemList(
+            EpisodeList(
                 uiState = it,
-                selectItem = { episode ->
+                selectEpisode = { episode ->
                     uiState?.let { state ->
                         val playItem = PlayItem(channel = state.podCast.channel, episode = episode)
                         selectPlayItem(playItem)
@@ -101,10 +97,7 @@ private fun Channel(
     modifier: Modifier = Modifier,
 ) {
     val channel = uiState.podCast.channel
-    // subscribedの状態はflowで流れて来ないのでここで保持する
-    var subscribed by remember(channel.subscribed) { mutableStateOf(channel.subscribed) }
 
-    MyLog.d(TAG, "imageUrl = ${channel.imageUrl}")
     Card(
         modifier = modifier.padding(vertical = dimensionResource(R.dimen.padding_small))
     ) {
@@ -137,11 +130,10 @@ private fun Channel(
                     style = MaterialTheme.typography.titleMedium
                 )
             }
-            val image = if (!subscribed) Icons.Filled.AddCircle else Icons.Default.Delete
+            val image = if (!channel.subscribed) Icons.Filled.AddCircle else Icons.Default.Delete
             IconButton(
                 onClick = {
-                    subscribed = !subscribed
-                    subscribe(uiState.podCast.channel, subscribed)
+                    subscribe(uiState.podCast.channel, !channel.subscribed)
                 },
             ) {
                 Icon(
@@ -163,9 +155,9 @@ private fun Channel(
 }
 
 @Composable
-private fun ItemList(
+private fun EpisodeList(
     uiState: PodCastUIState,
-    selectItem: (Episode) -> Unit,
+    selectEpisode: (Episode) -> Unit,
     addPlaylist: (Episode) -> Unit,
     download: (Episode) -> Unit,
     modifier: Modifier = Modifier,
@@ -174,9 +166,9 @@ private fun ItemList(
         modifier = modifier.fillMaxSize()
     ) {
         items(uiState.podCast.episodeList) {
-            Item(
+            Episode(
                 episode = it,
-                selectItem = selectItem,
+                selectEpisode = selectEpisode,
                 addPlayList = addPlaylist,
                 download = download,
             )
@@ -185,9 +177,9 @@ private fun ItemList(
 }
 
 @Composable
-private fun Item(
+private fun Episode(
     episode: Episode,
-    selectItem: (Episode) -> Unit,
+    selectEpisode: (Episode) -> Unit,
     addPlayList: (Episode) -> Unit,
     download: (Episode) -> Unit,
     modifier: Modifier = Modifier,
@@ -199,7 +191,7 @@ private fun Item(
             modifier = modifier
                 .fillMaxWidth()
                 .padding(dimensionResource(R.dimen.padding_small))
-                .clickable { selectItem(episode) },
+                .clickable { selectEpisode(episode) },
             horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.padding_small)),
             verticalAlignment = Alignment.CenterVertically,
         ) {

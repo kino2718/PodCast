@@ -40,8 +40,8 @@ interface PodCastDao {
     suspend fun subscribedChannels(): List<PChannel>
 
     suspend fun subscribe(channel: PChannel, subscribe: Boolean) {
-        val channel1 = getChannelByFeedUrl(channel.feedUrl)
-        val channel2 = channel1?.let { c ->
+        val channelFromDb = getChannelByFeedUrl(channel.feedUrl)
+        val channel2 = channelFromDb?.let { c ->
             // 既に登録されていたらidをコピー
             channel.copy(id = c.id)
         } ?: channel
@@ -179,7 +179,7 @@ interface PodCastDao {
     }
 
     @Query("select * from PChannel where feedUrl = :feedUrl")
-    suspend fun getPodCastByFeedUrl(feedUrl: String): PodCast?
+    fun getPodCastByFeedUrlFlow(feedUrl: String): Flow<PodCast?>
 
     suspend fun getRecentPlays(limits: Int): List<PlayItem> {
         return getRecentEpisodes(limits).mapNotNull { ep ->
