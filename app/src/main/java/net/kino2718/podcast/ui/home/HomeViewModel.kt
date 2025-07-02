@@ -112,6 +112,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
                         }
                     // rss処理に時間がかかるので途中経過も表示する。
                     latestEpisodeMap.values.toList().flatten()
+                        .sortedByDescending { it.episode.pubDate }
                 }
         }
     }.stateIn(viewModelScope, SharingStarted.Lazily, listOf())
