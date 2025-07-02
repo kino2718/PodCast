@@ -27,13 +27,13 @@ class Repository(context: Context) {
     suspend fun updateEpisode(episode: Episode) = podCastDao.updateEpisode(episode)
     fun getPodCastByFeedUrlFlow(feedUrl: String) = podCastDao.getPodCastByFeedUrlFlow(feedUrl)
     fun subscribedChannelFlow() = podCastDao.subscribedChannelFlow()
-    suspend fun subscribedChannels() = podCastDao.subscribedChannels()
-    suspend fun getRecentPlays(limits: Int) = podCastDao.getRecentPlays(limits)
-    suspend fun getLastPlayedEpisodeByFeedUrl(feedUrl: String) =
-        podCastDao.getLastPlayedEpisodeByFeedUrl(feedUrl)
+    fun getRecentPlaysFlow(limits: Int) = podCastDao.getRecentPlaysFlow(limits)
 
-    suspend fun getLatestCompletedEpisodeByFeedUrl(feedUrl: String) =
-        podCastDao.getLatestCompletedEpisodeByFeedUrl(feedUrl)
+    fun getLastPlayedEpisodeByFeedUrlFlow(feedUrl: String) =
+        podCastDao.getLastPlayedEpisodeByFeedUrlFlow(feedUrl)
+
+    fun getLatestCompletedEpisodeByFeedUrlFlow(feedUrl: String) =
+        podCastDao.getLatestCompletedEpisodeByFeedUrlFlow(feedUrl)
 
     fun getPlaylistItemsFlow() = podCastDao.getPlaylistItemsFlow()
     suspend fun getPlaylistItems() = podCastDao.getPlaylistItems()

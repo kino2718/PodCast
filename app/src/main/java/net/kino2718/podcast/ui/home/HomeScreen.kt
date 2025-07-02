@@ -46,7 +46,7 @@ fun HomeScreen(
     viewModel: HomeViewModel = viewModel()
 ) {
     val subscribed by viewModel.subscribedFlow.collectAsState()
-    val recentPlays by viewModel.recentPlays.collectAsState()
+    val recentPlays by viewModel.recentPlaysFlow.collectAsState()
     val nextEpisodes by viewModel.nextEpisodesFlow.collectAsState()
     val latestEpisodes by viewModel.latestEpisodesFlow.collectAsState()
 
