@@ -43,7 +43,7 @@ interface PodCastDao {
     fun getChannelByFeedUrlFlow(feedUrl: String): Flow<PChannel?>
 
 
-    @Query("select * from PChannel where subscribed = true")
+    @Query("select * from PChannel where subscribed = true order by lastUpdate desc")
     fun subscribedChannelFlow(): Flow<List<PChannel>>
 
     suspend fun subscribe(channel: PChannel, subscribe: Boolean) {
