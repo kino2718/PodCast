@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.stateIn
@@ -56,7 +57,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     val nextEpisodesFlow = subscribedFlow.flatMapLatest { channels ->
         val nextEpisodeMap = mutableMapOf<String, PlayItem>()
         // subscribeしているchannel毎に処理する
-        rssDataFlow(channels).flatMapLatest { rssData ->
+        rssDataFlow(channels).flatMapMerge { rssData ->
             repo.getLastPlayedEpisodeByFeedUrlFlow(rssData.channel.feedUrl)
                 .filterNotNull()
                 .mapNotNull { lastPlayedEpisode ->
@@ -84,7 +85,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     val latestEpisodesFlow = subscribedFlow.flatMapLatest { channels ->
         val latestEpisodeMap = mutableMapOf<String, MutableList<PlayItem>>()
         // subscribeしているchannel毎に処理する
-        rssDataFlow(channels).flatMapLatest { rssData ->
+        rssDataFlow(channels).flatMapMerge { rssData ->
             repo.getLatestCompletedEpisodeByFeedUrlFlow(rssData.channel.feedUrl)
                 .mapNotNull { latestEpisode ->
                     latestEpisodeMap.remove(rssData.channel.feedUrl)
