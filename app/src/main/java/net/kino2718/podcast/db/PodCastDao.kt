@@ -33,6 +33,9 @@ interface PodCastDao {
     @Query("select * from PChannel where id = :id")
     suspend fun getChannelById(id: Long): PChannel?
 
+    @Query("select * from PChannel where id = :id")
+    fun getChannelByIdFlow(id: Long): Flow<PChannel?>
+
     @Query("select * from PChannel where feedUrl = :feedUrl")
     suspend fun getChannelByFeedUrl(feedUrl: String): PChannel?
 
@@ -67,6 +70,9 @@ interface PodCastDao {
 
     @Query("select * from Episode where id = :id")
     suspend fun getEpisodeById(id: Long): Episode?
+
+    @Query("select * from Episode where id = :id")
+    fun getEpisodeByIdFlow(id: Long): Flow<Episode?>
 
     @Query("select * from Episode where (lastPlayed is not null) and (isPlaybackCompleted = false) order by lastPlayed desc limit :limits")
     fun getRecentEpisodesFlow(limits: Int): Flow<List<Episode>>

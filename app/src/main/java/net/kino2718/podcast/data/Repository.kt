@@ -22,7 +22,9 @@ class Repository(context: Context) {
     private suspend fun deleteAllPlayItem() = podCastDao.deleteAllPlayItems()
 
     suspend fun getChannelById(id: Long) = podCastDao.getChannelById(id)
+    fun getChannelByIdFlow(id: Long) = podCastDao.getChannelByIdFlow(id)
     suspend fun getEpisodeById(id: Long) = podCastDao.getEpisodeById(id)
+    fun getEpisodeByIdFlow(id: Long) = podCastDao.getEpisodeByIdFlow(id)
     fun getLastPlayedItemIdFlow() = podCastDao.getLastPlayedItemIdFlow()
     suspend fun updateEpisode(episode: Episode) = podCastDao.updateEpisode(episode)
     fun getPodCastByFeedUrlFlow(feedUrl: String) = podCastDao.getPodCastByFeedUrlFlow(feedUrl)

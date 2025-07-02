@@ -3,8 +3,11 @@ package net.kino2718.podcast.ui.playlist
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import net.kino2718.podcast.data.PlayItem
@@ -18,16 +21,26 @@ data class PlaylistUIState(
 
 class PlaylistViewModel(app: Application) : AndroidViewModel(app) {
     private val repo = Repository(app)
-    val playlistUIStatesFlow = repo.getPlaylistItemsFlow().map { playlistItems ->
-        playlistItems.mapNotNull { playlistItem ->
-            val channel = repo.getChannelById(playlistItem.channelId)
-            val episode = repo.getEpisodeById(playlistItem.episodeId)
-            if (channel != null && episode != null)
-                PlaylistUIState(
-                    playlistItem = playlistItem,
-                    playItem = PlayItem(channel = channel, episode = episode, inPlaylist = true),
-                )
-            else null
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val playlistUIStatesFlow = repo.getPlaylistItemsFlow().flatMapLatest { playlistItems ->
+        val flows = playlistItems.map { playlistItem ->
+            repo.getChannelByIdFlow(playlistItem.channelId)
+                .combine(repo.getEpisodeByIdFlow(playlistItem.episodeId)) { channel, episode ->
+                    if (channel != null && episode != null)
+                        PlaylistUIState(
+                            playlistItem = playlistItem,
+                            playItem = PlayItem(
+                                channel = channel,
+                                episode = episode,
+                                inPlaylist = true
+                            ),
+                        )
+                    else null
+                }.filterNotNull()
+        }
+        combine(flows) { array ->
+            array.toList()
         }
     }.stateIn(viewModelScope, SharingStarted.Lazily, listOf())
 
