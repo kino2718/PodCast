@@ -1,6 +1,7 @@
 package net.kino2718.podcast.data
 
 import android.content.Context
+import kotlinx.coroutines.flow.distinctUntilChanged
 import net.kino2718.podcast.db.PodCastDatabase
 
 class Repository(context: Context) {
@@ -21,17 +22,19 @@ class Repository(context: Context) {
     suspend fun getChannelById(id: Long) = podCastDao.getChannelById(id)
     fun getChannelByIdFlow(id: Long) = podCastDao.getChannelByIdFlow(id)
     suspend fun getEpisodeById(id: Long) = podCastDao.getEpisodeById(id)
-    fun getEpisodeByIdFlow(id: Long) = podCastDao.getEpisodeByIdFlow(id)
+    fun getEpisodeByIdFlow(id: Long) = podCastDao.getEpisodeByIdFlow(id).distinctUntilChanged()
     fun getLastPlayedItemIdFlow() = podCastDao.getLastPlayedItemIdFlow()
     suspend fun updateEpisode(episode: Episode) = podCastDao.updateEpisode(episode)
-    fun getPodCastByFeedUrlFlow(feedUrl: String) = podCastDao.getPodCastByFeedUrlFlow(feedUrl)
+    fun getPodCastByFeedUrlFlow(feedUrl: String) =
+        podCastDao.getPodCastByFeedUrlFlow(feedUrl).distinctUntilChanged()
+
     fun subscribedChannelFlow() = podCastDao.subscribedChannelFlow()
     fun getRecentPlaysFlow(limits: Int) = podCastDao.getRecentPlaysFlow(limits)
     fun getLastPlayedItemFlow() = podCastDao.getLastPlayedItemFlow()
     fun getLatestCompletedItemFlow() =
         podCastDao.getLatestCompletedItemFlow()
 
-    fun getPlaylistItemsFlow() = podCastDao.getPlaylistItemsFlow()
+    fun getPlaylistItemsFlow() = podCastDao.getPlaylistItemsFlow().distinctUntilChanged()
     suspend fun getPlaylistItems() = podCastDao.getPlaylistItems()
     suspend fun deleteAllPlaylistItems() = podCastDao.deleteAllPlaylistItems()
     suspend fun deletePlaylistItem(playlistItem: PlaylistItem) =

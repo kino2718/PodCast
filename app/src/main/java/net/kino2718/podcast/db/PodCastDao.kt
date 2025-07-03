@@ -9,6 +9,7 @@ import androidx.room.Upsert
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
@@ -172,13 +173,15 @@ interface PodCastDao {
     fun getPodCastByFeedUrlFlow(feedUrl: String): Flow<PodCast?>
 
     fun getRecentPlaysFlow(limits: Int): Flow<List<PlayItem>> {
-        return getRecentEpisodesFlow(limits).map { episodes ->
-            episodes.mapNotNull { ep ->
-                getChannelById(ep.channelId)?.let {
-                    PlayItem(it, ep)
+        return getRecentEpisodesFlow(limits)
+            .distinctUntilChanged()
+            .map { episodes ->
+                episodes.mapNotNull { ep ->
+                    getChannelById(ep.channelId)?.let {
+                        PlayItem(it, ep)
+                    }
                 }
             }
-        }
     }
 
     @Query(
@@ -192,9 +195,11 @@ interface PodCastDao {
     fun getLastPlayedItemFlow(): Flow<List<PlayItem>> {
         return subscribedChannelFlow().flatMapLatest { channels ->
             val flows = channels.map { channel ->
-                getLastPlayedEpisodeByIdFlow(channel.id).map { episode ->
-                    episode?.let { PlayItem(channel = channel, episode = it) }
-                }
+                getLastPlayedEpisodeByIdFlow(channel.id)
+                    .distinctUntilChanged()
+                    .map { episode ->
+                        episode?.let { PlayItem(channel = channel, episode = it) }
+                    }
             }
             combine(flows) { arrays ->
                 arrays.toList().filterNotNull()
@@ -213,9 +218,11 @@ interface PodCastDao {
     fun getLatestCompletedItemFlow(): Flow<List<PlayItem>> {
         return subscribedChannelFlow().flatMapLatest { channels ->
             val flows = channels.map { channel ->
-                getLatestCompletedEpisodeByIdFlow(channel.id).map { episode ->
-                    episode?.let { PlayItem(channel = channel, episode = it) }
-                }
+                getLatestCompletedEpisodeByIdFlow(channel.id)
+                    .distinctUntilChanged()
+                    .map { episode ->
+                        episode?.let { PlayItem(channel = channel, episode = it) }
+                    }
             }
             combine(flows) { arrays ->
                 arrays.toList().filterNotNull()
