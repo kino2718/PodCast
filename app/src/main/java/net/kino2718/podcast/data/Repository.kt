@@ -10,7 +10,6 @@ class Repository(context: Context) {
         podCastDao.subscribe(channel, subscribe)
 
     suspend fun setPlayItem(playItem: PlayItem): PlayItem = podCastDao.upsertPlayItem(playItem)
-
     suspend fun setCurrentPlayItem(playItem: PlayItem): PlayItem {
         // 登録を全て消し１つのみ登録する様にする。
         deleteAllPlayItem()
@@ -18,9 +17,7 @@ class Repository(context: Context) {
     }
 
     suspend fun addToPlaylist(playItem: PlayItem) = podCastDao.addToPlaylist(playItem)
-
     private suspend fun deleteAllPlayItem() = podCastDao.deleteAllPlayItems()
-
     suspend fun getChannelById(id: Long) = podCastDao.getChannelById(id)
     fun getChannelByIdFlow(id: Long) = podCastDao.getChannelByIdFlow(id)
     suspend fun getEpisodeById(id: Long) = podCastDao.getEpisodeById(id)
@@ -30,12 +27,9 @@ class Repository(context: Context) {
     fun getPodCastByFeedUrlFlow(feedUrl: String) = podCastDao.getPodCastByFeedUrlFlow(feedUrl)
     fun subscribedChannelFlow() = podCastDao.subscribedChannelFlow()
     fun getRecentPlaysFlow(limits: Int) = podCastDao.getRecentPlaysFlow(limits)
-
-    fun getLastPlayedEpisodeByFeedUrlFlow(feedUrl: String) =
-        podCastDao.getLastPlayedEpisodeByFeedUrlFlow(feedUrl)
-
-    fun getLatestCompletedEpisodeByFeedUrlFlow(feedUrl: String) =
-        podCastDao.getLatestCompletedEpisodeByFeedUrlFlow(feedUrl)
+    fun getLastPlayedItemFlow() = podCastDao.getLastPlayedItemFlow()
+    fun getLatestCompletedItemFlow() =
+        podCastDao.getLatestCompletedItemFlow()
 
     fun getPlaylistItemsFlow() = podCastDao.getPlaylistItemsFlow()
     suspend fun getPlaylistItems() = podCastDao.getPlaylistItems()

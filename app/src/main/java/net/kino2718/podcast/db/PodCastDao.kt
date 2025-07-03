@@ -8,8 +8,8 @@ import androidx.room.Update
 import androidx.room.Upsert
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
 import net.kino2718.podcast.data.CurrentPlayItemId
@@ -74,7 +74,9 @@ interface PodCastDao {
     @Query("select * from Episode where id = :id")
     fun getEpisodeByIdFlow(id: Long): Flow<Episode?>
 
-    @Query("select * from Episode where (lastPlayed is not null) and (isPlaybackCompleted = false) order by lastPlayed desc limit :limits")
+    @Query("select * from Episode " +
+            "where (lastPlayed is not null) and (isPlaybackCompleted = false) " +
+            "order by lastPlayed desc limit :limits")
     fun getRecentEpisodesFlow(limits: Int): Flow<List<Episode>>
 
     @Upsert
@@ -160,23 +162,43 @@ interface PodCastDao {
         }
     }
 
-    @Query("select * from Episode where (channelId = :channelId) and (lastPlayed is not null) order by lastPlayed desc limit 1")
-    fun getLastPlayedEpisodeFlow(channelId: Long): Flow<Episode?>
+    @Query("select * from Episode " +
+            "where (channelId = :channelId) and (lastPlayed is not null) " +
+            "order by lastPlayed desc limit 1")
+    fun getLastPlayedEpisodeByIdFlow(channelId: Long): Flow<Episode?>
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    fun getLastPlayedEpisodeByFeedUrlFlow(feedUrl: String): Flow<Episode?> {
-        return getChannelByFeedUrlFlow(feedUrl).flatMapLatest { channel ->
-            channel?.let { getLastPlayedEpisodeFlow(it.id) } ?: flowOf()
+    fun getLastPlayedItemFlow(): Flow<List<PlayItem>> {
+        return subscribedChannelFlow().flatMapLatest { channels ->
+            val flows = channels.map { channel ->
+                getLastPlayedEpisodeByIdFlow(channel.id).map { episode ->
+                    episode?.let { PlayItem(channel = channel, episode = it) }
+                }
+            }
+            combine(flows) { arrays ->
+                arrays.toList().filterNotNull()
+            }
         }
     }
 
-    @Query("select * from Episode where (channelId = :channelId) and (isPlaybackCompleted = true) order by pubDate desc limit 1")
-    fun getLatestCompletedEpisodeFlow(channelId: Long): Flow<Episode?>
+    @Query(
+        "select * from Episode " +
+                "where (channelId = :channelId) and (isPlaybackCompleted = true) " +
+                "order by pubDate desc limit 1"
+    )
+    fun getLatestCompletedEpisodeByIdFlow(channelId: Long): Flow<Episode?>
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    fun getLatestCompletedEpisodeByFeedUrlFlow(feedUrl: String): Flow<Episode?> {
-        return getChannelByFeedUrlFlow(feedUrl).flatMapLatest { channel ->
-            channel?.let { getLatestCompletedEpisodeFlow(it.id) } ?: flowOf()
+    fun getLatestCompletedItemFlow(): Flow<List<PlayItem>> {
+        return subscribedChannelFlow().flatMapLatest { channels ->
+            val flows = channels.map { channel ->
+                getLatestCompletedEpisodeByIdFlow(channel.id).map { episode ->
+                    episode?.let { PlayItem(channel = channel, episode = it) }
+                }
+            }
+            combine(flows) { arrays ->
+                arrays.toList().filterNotNull()
+            }
         }
     }
 
