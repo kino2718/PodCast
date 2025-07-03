@@ -4,7 +4,6 @@ import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Query
 import androidx.room.Transaction
-import androidx.room.Update
 import androidx.room.Upsert
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -13,6 +12,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import net.kino2718.podcast.data.CurrentPlayItemId
 import net.kino2718.podcast.data.Episode
 import net.kino2718.podcast.data.PChannel
@@ -80,8 +80,20 @@ interface PodCastDao {
         }
     }
 
-    @Update
-    suspend fun updateEpisode(episode: Episode)
+    @Query(
+        "update Episode set playbackPosition = :position, duration = :duration, " +
+                "isPlaybackCompleted = :completed, lastPlayed = :lastPlayed " +
+                "where id = :id"
+    )
+    suspend fun updatePlaybackInfos(
+        id: Long, position: Long, duration: Long, completed: Boolean, lastPlayed: Instant
+    ): Int
+
+    @Query("update Episode set downloadFile = :downloadFile where id = :id")
+    suspend fun updateDownloadFile(id: Long, downloadFile: String?): Int
+
+    @Query("select * from Episode where downloadFile is not null")
+    suspend fun getDownloadedEpisodes(): List<Episode>
 
     @Query("select * from Episode where id = :id")
     suspend fun getEpisodeById(id: Long): Episode?

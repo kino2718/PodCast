@@ -2,7 +2,11 @@ package net.kino2718.podcast.data
 
 import android.content.Context
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import net.kino2718.podcast.db.PodCastDatabase
+import java.io.File
+import kotlin.time.Duration.Companion.days
 
 class Repository(context: Context) {
     private val podCastDao = PodCastDatabase.getInstance(context).podCastDao()
@@ -24,7 +28,14 @@ class Repository(context: Context) {
     suspend fun getEpisodeById(id: Long) = podCastDao.getEpisodeById(id)
     fun getEpisodeByIdFlow(id: Long) = podCastDao.getEpisodeByIdFlow(id).distinctUntilChanged()
     fun getLastPlayedItemIdFlow() = podCastDao.getLastPlayedItemIdFlow()
-    suspend fun updateEpisode(episode: Episode) = podCastDao.updateEpisode(episode)
+
+    suspend fun updatePlaybackInfos(
+        id: Long, position: Long, duration: Long, completed: Boolean, lastPlayed: Instant
+    ) = podCastDao.updatePlaybackInfos(id, position, duration, completed, lastPlayed)
+
+    suspend fun updateDownloadFile(id: Long, file: String?) =
+        podCastDao.updateDownloadFile(id, file)
+
     fun getPodCastByFeedUrlFlow(feedUrl: String) =
         podCastDao.getPodCastByFeedUrlFlow(feedUrl).distinctUntilChanged()
 
@@ -39,7 +50,21 @@ class Repository(context: Context) {
     suspend fun deleteAllPlaylistItems() = podCastDao.deleteAllPlaylistItems()
     suspend fun deletePlaylistItem(playlistItem: PlaylistItem) =
         podCastDao.deletePlaylistItem(playlistItem)
-}
 
-@Suppress("unused")
-private const val TAG = "Repository"
+    suspend fun deleteOldDownloadFiles() {
+        podCastDao.getDownloadedEpisodes().forEach { episode ->
+            val now = Clock.System.now()
+            episode.lastPlayed?.let { lastPlayed ->
+                if (28.days < now - lastPlayed) {
+                    podCastDao.updateDownloadFile(episode.id, null)
+                    episode.downloadFile?.let { File(it).delete() }
+                }
+            }
+        }
+    }
+
+    companion object {
+        @Suppress("unused")
+        private const val TAG = "Repository"
+    }
+}

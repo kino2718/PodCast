@@ -57,6 +57,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     init {
         viewModelScope.launch {
+            // 古いダウンロードファイルの削除
+            repo.deleteOldDownloadFiles()
+            // playerの初期化
             initializePlayer()
             // この段階では_audioPlayerFlowは上記関数によって設定されている
             initializeController()
@@ -91,15 +94,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                                 repo.setCurrentPlayItem(currentPlayItem)
                                 currentPlayItemIndex = index
                             }
-                            val episode1 = currentPlayItem.episode
+                            val episode = currentPlayItem.episode
                             val completed = abs(duration - position) < 2000 // 終了まで2秒以内なら再生完了とする
-                            val episode2 = episode1.copy(
-                                playbackPosition = position,
-                                duration = duration,
-                                isPlaybackCompleted = completed,
-                                lastPlayed = Clock.System.now(),
+                            repo.updatePlaybackInfos(
+                                episode.id, position, duration, completed, Clock.System.now()
                             )
-                            repo.updateEpisode(episode2)
                         }
                     }
                 }
@@ -178,10 +177,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 val fName = "${episode.id}.$ext"
                 val destFile = File(appContext.filesDir, fName)
                 if (downloadFile(episode.url, destFile)) {
-                    val episode2 = episode.copy(
-                        downloadFile = destFile.absolutePath
-                    )
-                    repo.upsertPlayItem(playItem1.copy(episode = episode2))
+                    repo.updateDownloadFile(episode.id, destFile.absolutePath)
                 }
             }
             downloadMutex.withLock {
@@ -253,7 +249,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     val downloadFile = episode.getDownloadFileUri()
                     // databaseにはdownload fileがあるのに実際のファイルが無い場合はdatabaseを変更する
                     if (episode.downloadFile != null && downloadFile == null)
-                        repo.updateEpisode(episode.copy(downloadFile = null))
+                        repo.updateDownloadFile(episode.id, null)
                     val url = downloadFile ?: episode.url
                     MediaItem.Builder()
                         .setUri(url)
