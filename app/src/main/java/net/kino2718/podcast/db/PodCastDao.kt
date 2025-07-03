@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import net.kino2718.podcast.data.CurrentPlayItemId
 import net.kino2718.podcast.data.Episode
@@ -25,16 +24,22 @@ interface PodCastDao {
     @Upsert
     suspend fun upsertChannel(channel: PChannel): Long
 
-    suspend fun safeUpsertChannel(channel: PChannel): Long {
+    // uniqueであるfeedUrlで既登録かを確認しそうならそのidを使用する。
+    // idと状態であるsubscribe以外はupsertされる。
+    @Transaction
+    suspend fun safeUpsertChannel(channel: PChannel): PChannel {
         val existing = getChannelByFeedUrl(channel.feedUrl)
         if (existing != null) {
-            // 既に登録されている
-            val channel2 = channel.copy(id = existing.id)
-            upsertChannel(channel2)
-            return existing.id
+            // 既に登録されている。状態以外のデータを更新。
+            val id = existing.id
+            val subscribed = existing.subscribed
+            val newChannel = channel.copy(id = id, subscribed = subscribed)
+            upsertChannel(newChannel)
+            return newChannel
         } else {
             // まだ登録されていない
-            return upsertChannel(channel)
+            val id = upsertChannel(channel)
+            return channel.copy(id = id)
         }
     }
 
@@ -54,29 +59,35 @@ interface PodCastDao {
     @Query("select * from PChannel where subscribed = true order by lastUpdate desc")
     fun subscribedChannelFlow(): Flow<List<PChannel>>
 
+    // uniqueであるfeedUrlで既登録かを確認しそうならそのidを使用する。
+    // そして他のデータは全てupsertされる。
+    @Transaction
     suspend fun subscribe(channel: PChannel, subscribe: Boolean) {
-        val channelFromDb = getChannelByFeedUrl(channel.feedUrl)
-        val channel2 = channelFromDb?.let { c ->
-            // 既に登録されていたらidをコピー
-            channel.copy(id = c.id)
-        } ?: channel
-        val channel3 = channel2.copy(subscribed = subscribe)
-        upsertChannel(channel3)
+        val id = getChannelByFeedUrl(channel.feedUrl)?.id ?: 0L
+        upsertChannel(channel.copy(id = id))
     }
 
     @Upsert
     suspend fun upsertEpisode(episode: Episode): Long
 
-    suspend fun safeUpsertEpisode(episode: Episode): Long {
+    @Transaction
+    suspend fun safeUpsertEpisode(episode: Episode): Episode {
         val existing = getEpisodeByGuid(episode.guid)
         if (existing != null) {
-            // 既に登録されている
-            val episode2 = episode.copy(id = existing.id)
-            upsertEpisode(episode2)
-            return existing.id
+            // 既に登録されている。状態以外のデータを更新。
+            val episode1 = episode.copy(
+                id = existing.id,
+                downloadFile = existing.downloadFile,
+                playbackPosition = existing.playbackPosition,
+                isPlaybackCompleted = existing.isPlaybackCompleted,
+                lastPlayed = existing.lastPlayed,
+            )
+            upsertEpisode(episode1)
+            return episode1
         } else {
             // まだ登録されていない
-            return upsertEpisode(episode)
+            val id = upsertEpisode(episode)
+            return episode.copy(id = id)
         }
     }
 
@@ -120,16 +131,11 @@ interface PodCastDao {
     @Query("select * from CurrentPlayItemId limit 1")
     fun getLastPlayedItemIdFlow(): Flow<CurrentPlayItemId?>
 
-    // PlayItemに含まれる channel, episode を登録する。
-    // feedUrl と guid で同じデータが既に登録されているかを確認する。
-    // 登録されていたらidと状態以外を更新する。
+    // PlayItemに含まれる channel, episode を登録しidを確定する。
+    // そしてCurrentPlayItemIdをそのidで更新する。
     @Transaction
     suspend fun upsertCurrentPlayItem(playItem: PlayItem): PlayItem {
-        val playItemWithTime = playItem.copy(
-            channel = playItem.channel,
-            episode = playItem.episode.copy(lastPlayed = Clock.System.now())
-        )
-        val savedPlayItem = upsertPlayItem(playItemWithTime)
+        val savedPlayItem = upsertPlayItem(playItem)
 
         // 現在再生しているPlayItemを登録する。
         val currentPlayItemId = CurrentPlayItemId(
@@ -171,12 +177,10 @@ interface PodCastDao {
 
     suspend fun upsertPlayItem(playItem: PlayItem): PlayItem {
         val channel = playItem.channel
-        val channelId = safeUpsertChannel(channel)
-        val upsertedChannel = channel.copy(id = channelId)
+        val upsertedChannel = safeUpsertChannel(channel)
 
-        val episode = playItem.episode.copy(channelId = channelId)
-        val episodeId = safeUpsertEpisode(episode)
-        val upsertedEpisode = episode.copy(id = episodeId)
+        val episode = playItem.episode.copy(channelId = upsertedChannel.id)
+        val upsertedEpisode = safeUpsertEpisode(episode)
 
         return PlayItem(channel = upsertedChannel, episode = upsertedEpisode, playItem.inPlaylist)
     }
