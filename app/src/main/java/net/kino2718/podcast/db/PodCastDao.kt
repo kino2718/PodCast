@@ -25,9 +25,16 @@ interface PodCastDao {
     suspend fun upsertChannel(channel: PChannel): Long
 
     suspend fun safeUpsertChannel(channel: PChannel): Long {
-        val prevId = channel.id
-        val id = upsertChannel(channel)
-        return if (0 < id) id else prevId
+        val existing = getChannelByFeedUrl(channel.feedUrl)
+        if (existing != null) {
+            // 既に登録されている
+            val channel2 = channel.copy(id = existing.id)
+            upsertChannel(channel2)
+            return existing.id
+        } else {
+            // まだ登録されていない
+            return upsertChannel(channel)
+        }
     }
 
     @Query("select * from PChannel where id = :id")
@@ -60,9 +67,16 @@ interface PodCastDao {
     suspend fun upsertEpisode(episode: Episode): Long
 
     suspend fun safeUpsertEpisode(episode: Episode): Long {
-        val prevId = episode.id
-        val id = upsertEpisode(episode)
-        return if (0 < id) id else prevId
+        val existing = getEpisodeByGuid(episode.guid)
+        if (existing != null) {
+            // 既に登録されている
+            val episode2 = episode.copy(id = existing.id)
+            upsertEpisode(episode2)
+            return existing.id
+        } else {
+            // まだ登録されていない
+            return upsertEpisode(episode)
+        }
     }
 
     @Update
@@ -74,9 +88,14 @@ interface PodCastDao {
     @Query("select * from Episode where id = :id")
     fun getEpisodeByIdFlow(id: Long): Flow<Episode?>
 
-    @Query("select * from Episode " +
-            "where (lastPlayed is not null) and (isPlaybackCompleted = false) " +
-            "order by lastPlayed desc limit :limits")
+    @Query("select * from Episode where guid = :guid")
+    suspend fun getEpisodeByGuid(guid: String): Episode?
+
+    @Query(
+        "select * from Episode " +
+                "where (lastPlayed is not null) and (isPlaybackCompleted = false) " +
+                "order by lastPlayed desc limit :limits"
+    )
     fun getRecentEpisodesFlow(limits: Int): Flow<List<Episode>>
 
     @Upsert
@@ -162,9 +181,11 @@ interface PodCastDao {
         }
     }
 
-    @Query("select * from Episode " +
-            "where (channelId = :channelId) and (lastPlayed is not null) " +
-            "order by lastPlayed desc limit 1")
+    @Query(
+        "select * from Episode " +
+                "where (channelId = :channelId) and (lastPlayed is not null) " +
+                "order by lastPlayed desc limit 1"
+    )
     fun getLastPlayedEpisodeByIdFlow(channelId: Long): Flow<Episode?>
 
     @OptIn(ExperimentalCoroutinesApi::class)
