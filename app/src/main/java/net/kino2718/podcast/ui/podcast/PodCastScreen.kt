@@ -16,6 +16,7 @@ import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.FileDownloadDone
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -242,12 +243,15 @@ private fun Episode(
                     modifier = Modifier.size(dimensionResource(R.dimen.icon_small)),
                 )
             }
+            val downloaded = episode.downloadFile != null
             IconButton(
                 onClick = { download(episode) },
-                modifier = Modifier.size(dimensionResource(R.dimen.icon_button_small))
+                modifier = Modifier.size(dimensionResource(R.dimen.icon_button_small)),
+                enabled = !downloaded,
             ) {
+                val image = if (downloaded) Icons.Default.FileDownloadDone else Icons.Default.Download
                 Icon(
-                    imageVector = Icons.Default.Download,
+                    imageVector = image,
                     contentDescription = null,
                     modifier = Modifier.size(dimensionResource(R.dimen.icon_small)),
                 )

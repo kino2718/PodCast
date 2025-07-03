@@ -22,7 +22,10 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.guava.await
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Clock
+import net.kino2718.podcast.data.Episode
 import net.kino2718.podcast.data.PlayItem
 import net.kino2718.podcast.data.Repository
 import net.kino2718.podcast.service.PlaybackService
@@ -155,9 +158,20 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    private val downloadMap: MutableMap<String, Boolean> = mutableMapOf()
+    private val downloadMutex = Mutex()
+
     fun download(playItem: PlayItem) {
         viewModelScope.launch(Dispatchers.IO) {
-            val episode = playItem.episode
+            // 既にこのファイルをdownload中だったら何もしない
+            downloadMutex.withLock {
+                val inDownloading = downloadMap[playItem.episode.guid] ?: false
+                if (inDownloading) return@launch
+                downloadMap[playItem.episode.guid] = true
+            }
+
+            val playItem1 = repo.upsertPlayItem(playItem) // idが割り振られていることを確定する
+            val episode = playItem1.episode
             // urlから拡張子を取得する
             episode.url.getExtensionFromUrl()?.let { ext ->
                 // episode idからファイル名を作成
@@ -167,8 +181,12 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     val episode2 = episode.copy(
                         downloadFile = destFile.absolutePath
                     )
-                    repo.setPlayItem(playItem.copy(episode = episode2))
+                    repo.upsertPlayItem(playItem1.copy(episode = episode2))
                 }
+            }
+            downloadMutex.withLock {
+                // download終了
+                downloadMap[playItem.episode.guid] = false
             }
         }
     }
@@ -232,7 +250,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                         .setTotalTrackCount(playItemList.size)
                         .setArtworkUri(episode.imageUrl?.toUri())
                         .build()
-                    val url = episode.downloadFile?.toUri()?.path ?: episode.url
+                    val downloadFile = episode.getDownloadFileUri()
+                    // databaseにはdownload fileがあるのに実際のファイルが無い場合はdatabaseを変更する
+                    if (episode.downloadFile != null && downloadFile == null)
+                        repo.updateEpisode(episode.copy(downloadFile = null))
+                    val url = downloadFile ?: episode.url
                     MediaItem.Builder()
                         .setUri(url)
                         .setMediaMetadata(metadata)
@@ -251,18 +273,13 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         _audioPlayerFlow.value = null
     }
 
-    /*
-        private var lastUri: String? = null
-        private fun setMediaItem(player: Player, uri: String, pos: Long) {
-            MyLog.d(TAG, "setMediaItem: uri = $uri")
-            if (lastUri == uri) return
-            lastUri = uri
-            val mediaItem = MediaItem.fromUri(uri)
-            player.setMediaItem(mediaItem, pos)
-            player.prepare()
-            player.play()
+    private fun Episode.getDownloadFileUri(): String? {
+        return downloadFile?.let {
+            val file = File(it)
+            if (file.exists() && file.isFile) downloadFile.toUri().path
+            else null
         }
-    */
+    }
 
     override fun onCleared() {
         releasePlayer()

@@ -10,7 +10,7 @@ class Repository(context: Context) {
     suspend fun subscribe(channel: PChannel, subscribe: Boolean) =
         podCastDao.subscribe(channel, subscribe)
 
-    suspend fun setPlayItem(playItem: PlayItem): PlayItem = podCastDao.upsertPlayItem(playItem)
+    suspend fun upsertPlayItem(playItem: PlayItem): PlayItem = podCastDao.upsertPlayItem(playItem)
     suspend fun setCurrentPlayItem(playItem: PlayItem): PlayItem {
         // 登録を全て消し１つのみ登録する様にする。
         deleteAllPlayItem()
