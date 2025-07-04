@@ -4,8 +4,12 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.withContext
@@ -44,7 +48,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     // next episodes
-    val nextEpisodesFlow = repo.getLastPlayedItemFlow().transform { lastPlayedItems ->
+    private val nextPlayItemsRssFlow = repo.getLastPlayedItemFlow().transform { lastPlayedItems ->
         val nextPlayItemList = mutableListOf<PlayItem>()
         lastPlayedItems.map { lastPlayedItem ->
             getRssData(lastPlayedItem.channel)?.let { rssData ->
@@ -54,11 +58,11 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
                 // 見つからない(index == -1)場合は何もしない。先頭なら最後に聴いたのが最新なので何もしない。
                 // そうでないなら次に聴くepisodeとしてリストアップする。
                 if (0 < index) {
-                    val nextEpisode = rssData.episodeList[index - 1]
+                    val nextEpisodeRss = rssData.episodeList[index - 1]
                     nextPlayItemList.add(
                         PlayItem(
                             channel = lastPlayedItem.channel,
-                            episode = nextEpisode
+                            episode = nextEpisodeRss
                         )
                     )
                     // rss処理に時間がかかるので途中経過も表示する。
@@ -66,10 +70,14 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
         }
-    }.stateIn(viewModelScope, SharingStarted.Lazily, listOf())
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val nextPlayItemsFlow = changeEpisodesIfExist(nextPlayItemsRssFlow)
+        .stateIn(viewModelScope, SharingStarted.Lazily, listOf())
 
     // latest episodes
-    val latestEpisodesFlow =
+    private val latestPlayItemsRssFlow =
         combine(
             repo.subscribedChannelFlow(),
             repo.getLatestCompletedItemFlow()
@@ -143,7 +151,27 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
 
-        }.stateIn(viewModelScope, SharingStarted.Lazily, listOf())
+        }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val latestPlayItemsFlow = changeEpisodesIfExist(latestPlayItemsRssFlow)
+        .stateIn(viewModelScope, SharingStarted.Lazily, listOf())
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun changeEpisodesIfExist(flow: Flow<List<PlayItem>>): Flow<List<PlayItem>> {
+        return flow.flatMapLatest { playItems ->
+            val guids = playItems.map { it.episode.guid }
+            repo.getEpisodesByGuidsFlow(guids).map { episodesFromDb ->
+                playItems.map { playItem ->
+                    // dbからのepisode listの中から探す
+                    val episode =
+                        episodesFromDb.firstOrNull { playItem.episode.guid == it.guid }
+                            ?: playItem.episode
+                    playItem.copy(episode = episode)
+                }
+            }
+        }
+    }
 
     companion object {
         @Suppress("unused")

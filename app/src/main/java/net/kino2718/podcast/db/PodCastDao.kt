@@ -123,6 +123,9 @@ interface PodCastDao {
     )
     fun getRecentEpisodesFlow(limits: Int): Flow<List<Episode>>
 
+    @Query("select * from Episode where guid in (:guids)")
+    fun getEpisodesByGuidsFlow(guids: List<String>): Flow<List<Episode>>
+
     @Upsert
     suspend fun upsertPlayItemId(item: CurrentPlayItemId): Long
 

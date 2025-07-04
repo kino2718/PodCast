@@ -44,6 +44,7 @@ import net.kino2718.podcast.data.PlayItem
 import net.kino2718.podcast.ui.utils.formatToDate
 import net.kino2718.podcast.ui.utils.toHMS
 import net.kino2718.podcast.ui.utils.toHttps
+import net.kino2718.podcast.utils.MyLog
 
 @Composable
 fun HomeScreen(
@@ -56,8 +57,8 @@ fun HomeScreen(
 ) {
     val subscribed by viewModel.subscribedFlow.collectAsState()
     val recentPlays by viewModel.recentPlaysFlow.collectAsState()
-    val nextEpisodes by viewModel.nextEpisodesFlow.collectAsState()
-    val latestEpisodes by viewModel.latestEpisodesFlow.collectAsState()
+    val nextEpisodes by viewModel.nextPlayItemsFlow.collectAsState()
+    val latestEpisodes by viewModel.latestPlayItemsFlow.collectAsState()
 
     Column(
         modifier = modifier
@@ -199,6 +200,7 @@ private fun ShowPlayItemList(
                             }
                             // download
                             val downloaded = playItem.episode.downloadFile != null
+                            MyLog.d(TAG, "${playItem.episode.title}, downloaded = $downloaded")
                             IconButton(
                                 onClick = { download(playItem) },
                                 modifier = Modifier.size(dimensionResource(R.dimen.icon_button_small)),
@@ -219,3 +221,6 @@ private fun ShowPlayItemList(
         }
     }
 }
+
+@Suppress("unused")
+private const val TAG = "HomeScreen"

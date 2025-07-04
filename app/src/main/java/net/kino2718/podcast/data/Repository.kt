@@ -1,7 +1,9 @@
 package net.kino2718.podcast.data
 
 import android.content.Context
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import net.kino2718.podcast.db.PodCastDatabase
@@ -61,6 +63,11 @@ class Repository(context: Context) {
                 }
             }
         }
+    }
+
+    fun getEpisodesByGuidsFlow(guids: List<String>): Flow<List<Episode>> {
+        return if (guids.isEmpty()) flowOf(listOf())
+        else podCastDao.getEpisodesByGuidsFlow(guids)
     }
 
     companion object {
