@@ -82,6 +82,7 @@ fun MainScreen(
                     },
                     selectItem = viewModel::setPlayItem,
                     selectItems = viewModel::setPlayItems,
+                    addToPlaylist = viewModel::addToPlaylist,
                     download = viewModel::download,
                 )
             }
@@ -90,6 +91,7 @@ fun MainScreen(
                 PodCastScreen(
                     podCastDestination.feedUrl,
                     selectPlayItem = viewModel::setPlayItem,
+                    addToPlaylist = viewModel::addToPlaylist,
                     download = viewModel::download,
                 )
             }

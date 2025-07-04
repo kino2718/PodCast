@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -16,6 +17,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.FileDownloadDone
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -42,6 +49,8 @@ import net.kino2718.podcast.ui.utils.toHttps
 fun HomeScreen(
     select: (String) -> Unit,
     selectItem: (PlayItem) -> Unit,
+    addToPlaylist: (PlayItem) -> Unit,
+    download: (PlayItem) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = viewModel()
 ) {
@@ -83,16 +92,22 @@ fun HomeScreen(
             title = stringResource(R.string.title_recent_plays),
             playItemList = recentPlays,
             selectItem = selectItem,
+            addToPlaylist = addToPlaylist,
+            download = download,
         )
         ShowPlayItemList(
             title = stringResource(R.string.title_next_episodes),
             playItemList = nextEpisodes,
             selectItem = selectItem,
+            addToPlaylist = addToPlaylist,
+            download = download,
         )
         ShowPlayItemList(
             title = stringResource(R.string.title_latest_episodes),
             playItemList = latestEpisodes,
             selectItem = selectItem,
+            addToPlaylist = addToPlaylist,
+            download = download,
         )
     }
 }
@@ -102,6 +117,8 @@ private fun ShowPlayItemList(
     title: String,
     playItemList: List<PlayItem>,
     selectItem: (PlayItem) -> Unit,
+    addToPlaylist: (PlayItem) -> Unit,
+    download: (PlayItem) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (playItemList.isNotEmpty()) {
@@ -118,8 +135,8 @@ private fun ShowPlayItemList(
                 Box(
                     modifier = Modifier
                         .size(
-                            width = dimensionResource(R.dimen.recently_box_width),
-                            height = dimensionResource(R.dimen.recently_box_height)
+                            width = dimensionResource(R.dimen.home_box_width),
+                            height = dimensionResource(R.dimen.home_box_height)
                         )
                         .padding(dimensionResource(R.dimen.padding_extra_small))
                         .clip(RoundedCornerShape(dimensionResource(R.dimen.rounded_corner)))
@@ -149,26 +166,54 @@ private fun ShowPlayItemList(
                             overflow = TextOverflow.Ellipsis,
                             style = MaterialTheme.typography.titleSmall,
                         )
-                        item.pubDate?.formatToDate(LocalContext.current)
-                            ?.let { date ->
-                                Text(
-                                    text = date,
-                                    style = MaterialTheme.typography.titleSmall
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                item.pubDate?.formatToDate(LocalContext.current)?.let { date ->
+                                    Text(
+                                        text = date,
+                                        style = MaterialTheme.typography.titleSmall
+                                    )
+                                }
+                                val playbackPosition = item.playbackPosition
+                                val duration = item.duration
+                                if (duration != C.TIME_UNSET) {
+                                    val text =
+                                        if (0L < playbackPosition) "${playbackPosition.toHMS()}/${duration.toHMS()}"
+                                        else duration.toHMS()
+                                    Text(
+                                        text = text,
+                                        style = MaterialTheme.typography.titleSmall,
+                                    )
+                                }
+                            }
+                            // playlist
+                            IconButton(
+                                onClick = { addToPlaylist(playItem) },
+                                modifier = Modifier.size(dimensionResource(R.dimen.icon_button_small))
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.PlaylistAdd,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(dimensionResource(R.dimen.icon_small)),
                                 )
                             }
-                        val playbackPosition = item.playbackPosition
-                        val duration = item.duration
-                        if (duration != C.TIME_UNSET) {
-                            val text =
-                                if (0L < playbackPosition) "${playbackPosition.toHMS()}/${duration.toHMS()}"
-                                else duration.toHMS()
-                            Text(
-                                text = text,
-                                style = MaterialTheme.typography.titleSmall,
-                            )
+                            // download
+                            val downloaded = playItem.episode.downloadFile != null
+                            IconButton(
+                                onClick = { download(playItem) },
+                                modifier = Modifier.size(dimensionResource(R.dimen.icon_button_small)),
+                                enabled = !downloaded,
+                            ) {
+                                val image =
+                                    if (downloaded) Icons.Default.FileDownloadDone else Icons.Default.Download
+                                Icon(
+                                    imageVector = image,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(dimensionResource(R.dimen.icon_small)),
+                                )
+                            }
                         }
                     }
-
                 }
             }
         }

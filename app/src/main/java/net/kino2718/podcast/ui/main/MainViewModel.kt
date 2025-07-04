@@ -157,6 +157,12 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun addToPlaylist(playItem: PlayItem) {
+        viewModelScope.launch {
+            repo.addToPlaylist(playItem)
+        }
+    }
+
     private val downloadMap: MutableMap<String, Boolean> = mutableMapOf()
     private val downloadMutex = Mutex()
 

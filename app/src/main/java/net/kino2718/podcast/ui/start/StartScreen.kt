@@ -15,6 +15,7 @@ fun StartScreen(
     selectFeedUrl: (String) -> Unit,
     selectItem: (PlayItem) -> Unit,
     selectItems: (List<PlayItem>, Int) -> Unit,
+    addToPlaylist: (PlayItem) -> Unit,
     download: (PlayItem) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -22,6 +23,8 @@ fun StartScreen(
         NavItem.HOME -> HomeScreen(
             select = selectFeedUrl,
             selectItem = selectItem,
+            addToPlaylist = addToPlaylist,
+            download = download,
             modifier = modifier,
         )
 

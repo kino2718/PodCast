@@ -47,6 +47,7 @@ import net.kino2718.podcast.ui.utils.toHttps
 fun PodCastScreen(
     feedUrl: String,
     selectPlayItem: (PlayItem) -> Unit,
+    addToPlaylist: (PlayItem) -> Unit,
     download: (PlayItem) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: PodCastViewModel = viewModel()
@@ -74,10 +75,10 @@ fun PodCastScreen(
                         selectPlayItem(playItem)
                     }
                 },
-                addPlaylist = { episode ->
+                addToPlaylist = { episode ->
                     uiState?.let { state ->
                         val playItem = PlayItem(channel = state.podCast.channel, episode = episode)
-                        viewModel.addToPlaylist(playItem)
+                        addToPlaylist(playItem)
                     }
                 },
                 download = { episode ->
@@ -159,7 +160,7 @@ private fun Channel(
 private fun EpisodeList(
     uiState: PodCastUIState,
     selectEpisode: (Episode) -> Unit,
-    addPlaylist: (Episode) -> Unit,
+    addToPlaylist: (Episode) -> Unit,
     download: (Episode) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -170,7 +171,7 @@ private fun EpisodeList(
             Episode(
                 episode = it,
                 selectEpisode = selectEpisode,
-                addPlayList = addPlaylist,
+                addToPlayList = addToPlaylist,
                 download = download,
             )
         }
@@ -181,7 +182,7 @@ private fun EpisodeList(
 private fun Episode(
     episode: Episode,
     selectEpisode: (Episode) -> Unit,
-    addPlayList: (Episode) -> Unit,
+    addToPlayList: (Episode) -> Unit,
     download: (Episode) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -233,8 +234,9 @@ private fun Episode(
                     }
                 }
             }
+            // playlist
             IconButton(
-                onClick = { addPlayList(episode) },
+                onClick = { addToPlayList(episode) },
                 modifier = Modifier.size(dimensionResource(R.dimen.icon_button_small))
             ) {
                 Icon(
@@ -243,13 +245,15 @@ private fun Episode(
                     modifier = Modifier.size(dimensionResource(R.dimen.icon_small)),
                 )
             }
+            // download
             val downloaded = episode.downloadFile != null
             IconButton(
                 onClick = { download(episode) },
                 modifier = Modifier.size(dimensionResource(R.dimen.icon_button_small)),
                 enabled = !downloaded,
             ) {
-                val image = if (downloaded) Icons.Default.FileDownloadDone else Icons.Default.Download
+                val image =
+                    if (downloaded) Icons.Default.FileDownloadDone else Icons.Default.Download
                 Icon(
                     imageVector = image,
                     contentDescription = null,
