@@ -3,6 +3,7 @@ package net.kino2718.podcast.ui.now_playing
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -18,12 +19,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.media3.common.C
 import coil.compose.AsyncImage
 import net.kino2718.podcast.R
 import net.kino2718.podcast.data.Episode
 import net.kino2718.podcast.data.PChannel
+import net.kino2718.podcast.ui.utils.format
 import net.kino2718.podcast.ui.utils.fromHtml
+import net.kino2718.podcast.ui.utils.toHMS
 import net.kino2718.podcast.ui.utils.toHttps
 
 @Composable
@@ -132,6 +137,28 @@ private fun Episode(
                         text = episode.link,
                         style = MaterialTheme.typography.titleSmall,
                     )
+                    Row {
+                        episode.pubDate?.let {
+                            Text(
+                                text = it.format(),
+                                style = MaterialTheme.typography.titleSmall,
+                            )
+                        }
+                        Spacer(modifier = Modifier.weight(1f))
+
+                        val playbackPosition = episode.playbackPosition
+                        val duration = episode.duration
+                        if (duration != C.TIME_UNSET) {
+                            val text =
+                                if (episode.isPlaybackCompleted) stringResource(R.string.playback_done)
+                                else if (0L < playbackPosition) "${playbackPosition.toHMS()}/${duration.toHMS()}"
+                                else duration.toHMS()
+                            Text(
+                                text = text,
+                                style = MaterialTheme.typography.titleSmall,
+                            )
+                        }
+                    }
                 }
             }
             Text(
