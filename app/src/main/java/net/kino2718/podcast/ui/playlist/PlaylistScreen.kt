@@ -13,6 +13,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.FileDownloadDone
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -39,6 +41,7 @@ import net.kino2718.podcast.ui.utils.toHMS
 @Composable
 fun PlaylistScreen(
     selectItems: (List<PlayItem>, Int) -> Unit,
+    download: (PlayItem) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: PlaylistViewModel = viewModel(),
 ) {
@@ -57,7 +60,7 @@ fun PlaylistScreen(
             modifier = Modifier.fillMaxWidth()
         )
 
-        ItemList(
+        EpisodeList(
             playlistUIStates,
             selectItems = { playItemList, i ->
                 scope.launch {
@@ -65,6 +68,7 @@ fun PlaylistScreen(
                     selectItems(newPlayItemList, i)
                 }
             },
+            download = { playlistUIState -> download(playlistUIState.playItem) },
             deleteItem = viewModel::deleteItem,
         )
     }
@@ -99,17 +103,19 @@ private fun Header(
 }
 
 @Composable
-private fun ItemList(
+private fun EpisodeList(
     playlistUIStates: List<PlaylistUIState>,
     selectItems: (List<PlayItem>, Int) -> Unit,
+    download: (PlaylistUIState) -> Unit,
     deleteItem: (PlaylistUIState) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(modifier = modifier.fillMaxSize()) {
         itemsIndexed(playlistUIStates) { i, playlistUIState ->
-            Item(
+            Episode(
                 playlistUIState = playlistUIState,
                 selectItem = { selectItems(playlistUIStates.map { it.playItem }, i) },
+                download = download,
                 deleteItem = deleteItem,
             )
         }
@@ -117,9 +123,10 @@ private fun ItemList(
 }
 
 @Composable
-private fun Item(
+private fun Episode(
     playlistUIState: PlaylistUIState,
     selectItem: () -> Unit,
+    download: (PlaylistUIState) -> Unit,
     deleteItem: (PlaylistUIState) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -179,8 +186,25 @@ private fun Item(
                     }
                 }
             }
+            // download
+            val downloaded = episode.downloadFile != null
+            IconButton(
+                onClick = { download(playlistUIState) },
+                modifier = Modifier.size(dimensionResource(R.dimen.icon_button_small)),
+                enabled = !downloaded,
+            ) {
+                val image =
+                    if (downloaded) Icons.Default.FileDownloadDone else Icons.Default.Download
+                Icon(
+                    imageVector = image,
+                    contentDescription = null,
+                    modifier = Modifier.size(dimensionResource(R.dimen.icon_small))
+                )
+            }
+            // delete
             IconButton(
                 onClick = { deleteItem(playlistUIState) },
+                modifier = Modifier.size(dimensionResource(R.dimen.icon_button_small)),
             ) {
                 Icon(
                     imageVector = Icons.Default.Delete,

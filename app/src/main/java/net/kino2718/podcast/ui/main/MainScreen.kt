@@ -82,6 +82,7 @@ fun MainScreen(
                     },
                     selectItem = viewModel::setPlayItem,
                     selectItems = viewModel::setPlayItems,
+                    download = viewModel::download,
                 )
             }
             composable<PodCastDestination> { navBackStackEntry ->

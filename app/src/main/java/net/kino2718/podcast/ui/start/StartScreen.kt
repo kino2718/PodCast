@@ -15,6 +15,7 @@ fun StartScreen(
     selectFeedUrl: (String) -> Unit,
     selectItem: (PlayItem) -> Unit,
     selectItems: (List<PlayItem>, Int) -> Unit,
+    download: (PlayItem) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     when (navItem) {
@@ -31,6 +32,7 @@ fun StartScreen(
 
         NavItem.PLAYLIST -> PlaylistScreen(
             selectItems = selectItems,
+            download = download,
         )
 
         NavItem.NOW_PLAYING -> NowPlayingScreen()
