@@ -40,6 +40,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.media3.common.C
 import coil.compose.AsyncImage
 import net.kino2718.podcast.R
+import net.kino2718.podcast.data.PChannel
 import net.kino2718.podcast.data.PlayItem
 import net.kino2718.podcast.ui.utils.formatToDate
 import net.kino2718.podcast.ui.utils.toHMS
@@ -63,32 +64,16 @@ fun HomeScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(dimensionResource(R.dimen.padding_medium))
+            .padding(dimensionResource(R.dimen.padding_small))
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.padding_medium))
     ) {
-        Text(
-            text = stringResource(R.string.title_my_subscriptions),
-            style = MaterialTheme.typography.titleLarge
+        MySubscriptions(
+            title = stringResource(R.string.title_my_subscriptions),
+            selectFeedUrl = { select(it) },
+            subscribed = subscribed,
         )
-        LazyHorizontalGrid(
-            rows = GridCells.Fixed(2),
-            modifier = Modifier.height(dimensionResource(R.dimen.subscribed_grid_size) * 2)
-        ) {
-            items(subscribed) {
-                AsyncImage(
-                    model = it.imageUrl?.toHttps(), // httpだと表示されないため
-                    contentDescription = null,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(dimensionResource(R.dimen.padding_extra_small))
-                        .clip(RoundedCornerShape(dimensionResource(R.dimen.rounded_corner)))
-                        .clickable {
-                            select(it.feedUrl)
-                        }
-                )
-            }
-        }
+
         ShowPlayItemList(
             title = stringResource(R.string.title_recent_plays),
             playItemList = recentPlays,
@@ -114,6 +99,40 @@ fun HomeScreen(
 }
 
 @Composable
+private fun MySubscriptions(
+    title: String,
+    selectFeedUrl: (String) -> Unit,
+    subscribed: List<PChannel>,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier) {
+        Text(
+            text = title,
+            modifier = Modifier.padding(bottom = dimensionResource(R.dimen.padding_extra_small)),
+            style = MaterialTheme.typography.titleLarge,
+        )
+        LazyHorizontalGrid(
+            rows = GridCells.Fixed(2),
+            modifier = Modifier.height(dimensionResource(R.dimen.subscribed_grid_size) * 2)
+        ) {
+            items(subscribed) {
+                AsyncImage(
+                    model = it.imageUrl?.toHttps(), // httpだと表示されないため
+                    contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(dimensionResource(R.dimen.padding_extra_small))
+                        .clip(RoundedCornerShape(dimensionResource(R.dimen.rounded_corner)))
+                        .clickable {
+                            selectFeedUrl(it.feedUrl)
+                        }
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun ShowPlayItemList(
     title: String,
     playItemList: List<PlayItem>,
@@ -123,96 +142,97 @@ private fun ShowPlayItemList(
     modifier: Modifier = Modifier,
 ) {
     if (playItemList.isNotEmpty()) {
-        Text(
-            text = title,
-            modifier = modifier.padding(bottom = dimensionResource(R.dimen.padding_medium)),
-            style = MaterialTheme.typography.titleLarge,
-        )
-        LazyRow(
-            modifier = modifier,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            items(playItemList) { playItem ->
-                Box(
-                    modifier = Modifier
-                        .size(
-                            width = dimensionResource(R.dimen.home_box_width),
-                            height = dimensionResource(R.dimen.home_box_height)
+        Column(modifier = modifier) {
+            Text(
+                text = title,
+                modifier = Modifier.padding(bottom = dimensionResource(R.dimen.padding_extra_small)),
+                style = MaterialTheme.typography.titleLarge,
+            )
+            LazyRow(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                items(playItemList) { playItem ->
+                    Box(
+                        modifier = Modifier
+                            .size(
+                                width = dimensionResource(R.dimen.home_box_width),
+                                height = dimensionResource(R.dimen.home_box_height)
+                            )
+                            .padding(dimensionResource(R.dimen.padding_extra_small))
+                            .clip(RoundedCornerShape(dimensionResource(R.dimen.rounded_corner)))
+                            .clickable {
+                                selectItem(playItem)
+                            },
+                    ) {
+                        AsyncImage(
+                            model = playItem.episode.imageUrl?.toHttps(),
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop,
+                            alpha = .4f
                         )
-                        .padding(dimensionResource(R.dimen.padding_extra_small))
-                        .clip(RoundedCornerShape(dimensionResource(R.dimen.rounded_corner)))
-                        .clickable {
-                            selectItem(playItem)
-                        },
-                ) {
-                    AsyncImage(
-                        model = playItem.episode.imageUrl?.toHttps(),
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop,
-                        alpha = .4f
-                    )
-                    Column(modifier = Modifier.padding(dimensionResource(R.dimen.padding_small))) {
-                        val channel = playItem.channel
-                        val item = playItem.episode
-                        Text(
-                            text = item.title,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            style = MaterialTheme.typography.titleSmall,
-                        )
-                        Text(
-                            text = channel.title,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            style = MaterialTheme.typography.titleSmall,
-                        )
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                item.pubDate?.formatToDate(LocalContext.current)?.let { date ->
-                                    Text(
-                                        text = date,
-                                        style = MaterialTheme.typography.titleSmall
+                        Column(modifier = Modifier.padding(dimensionResource(R.dimen.padding_small))) {
+                            val channel = playItem.channel
+                            val item = playItem.episode
+                            Text(
+                                text = item.title,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                style = MaterialTheme.typography.titleSmall,
+                            )
+                            Text(
+                                text = channel.title,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                style = MaterialTheme.typography.titleSmall,
+                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    item.pubDate?.formatToDate(LocalContext.current)?.let { date ->
+                                        Text(
+                                            text = date,
+                                            style = MaterialTheme.typography.titleSmall
+                                        )
+                                    }
+                                    val playbackPosition = item.playbackPosition
+                                    val duration = item.duration
+                                    if (duration != C.TIME_UNSET) {
+                                        val text =
+                                            if (0L < playbackPosition) "${playbackPosition.toHMS()}/${duration.toHMS()}"
+                                            else duration.toHMS()
+                                        Text(
+                                            text = text,
+                                            style = MaterialTheme.typography.titleSmall,
+                                        )
+                                    }
+                                }
+                                // playlist
+                                IconButton(
+                                    onClick = { addToPlaylist(playItem) },
+                                    modifier = Modifier.size(dimensionResource(R.dimen.icon_button_small))
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.PlaylistAdd,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(dimensionResource(R.dimen.icon_small)),
                                     )
                                 }
-                                val playbackPosition = item.playbackPosition
-                                val duration = item.duration
-                                if (duration != C.TIME_UNSET) {
-                                    val text =
-                                        if (0L < playbackPosition) "${playbackPosition.toHMS()}/${duration.toHMS()}"
-                                        else duration.toHMS()
-                                    Text(
-                                        text = text,
-                                        style = MaterialTheme.typography.titleSmall,
+                                // download
+                                val downloaded = playItem.episode.downloadFile != null
+                                MyLog.d(TAG, "${playItem.episode.title}, downloaded = $downloaded")
+                                IconButton(
+                                    onClick = { download(playItem) },
+                                    modifier = Modifier.size(dimensionResource(R.dimen.icon_button_small)),
+                                    enabled = !downloaded,
+                                ) {
+                                    val image =
+                                        if (downloaded) Icons.Default.FileDownloadDone else Icons.Default.Download
+                                    Icon(
+                                        imageVector = image,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(dimensionResource(R.dimen.icon_small)),
                                     )
                                 }
-                            }
-                            // playlist
-                            IconButton(
-                                onClick = { addToPlaylist(playItem) },
-                                modifier = Modifier.size(dimensionResource(R.dimen.icon_button_small))
-                            ) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.PlaylistAdd,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(dimensionResource(R.dimen.icon_small)),
-                                )
-                            }
-                            // download
-                            val downloaded = playItem.episode.downloadFile != null
-                            MyLog.d(TAG, "${playItem.episode.title}, downloaded = $downloaded")
-                            IconButton(
-                                onClick = { download(playItem) },
-                                modifier = Modifier.size(dimensionResource(R.dimen.icon_button_small)),
-                                enabled = !downloaded,
-                            ) {
-                                val image =
-                                    if (downloaded) Icons.Default.FileDownloadDone else Icons.Default.Download
-                                Icon(
-                                    imageVector = image,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(dimensionResource(R.dimen.icon_small)),
-                                )
                             }
                         }
                     }
