@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
 import net.kino2718.podcast.data.CurrentPlayItemId
@@ -217,9 +218,8 @@ interface PodCastDao {
                         episode?.let { PlayItem(channel = channel, episode = it) }
                     }
             }
-            combine(flows) { arrays ->
-                arrays.toList().filterNotNull()
-            }
+            if (flows.isNotEmpty()) combine(flows) { arrays -> arrays.toList().filterNotNull() }
+            else flowOf(listOf())
         }
     }
 
@@ -240,9 +240,8 @@ interface PodCastDao {
                         episode?.let { PlayItem(channel = channel, episode = it) }
                     }
             }
-            combine(flows) { arrays ->
-                arrays.toList().filterNotNull()
-            }
+            if (flows.isNotEmpty()) combine(flows) { arrays -> arrays.toList().filterNotNull() }
+            else flowOf(listOf())
         }
     }
 

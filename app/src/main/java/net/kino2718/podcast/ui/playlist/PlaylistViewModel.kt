@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import net.kino2718.podcast.data.PlayItem
@@ -39,9 +40,8 @@ class PlaylistViewModel(app: Application) : AndroidViewModel(app) {
                     else null
                 }.filterNotNull()
         }
-        combine(flows) { array ->
-            array.toList()
-        }
+        if (flows.isNotEmpty()) combine(flows) { array -> array.toList() }
+        else flowOf(listOf())
     }.stateIn(viewModelScope, SharingStarted.Lazily, listOf())
 
     fun deleteAll() {
