@@ -33,7 +33,7 @@ class SearchViewModel(app: Application) : AndroidViewModel(app) {
     private val _searchUIStateFlow = MutableStateFlow(SearchUIState())
     val searchUIStateFlow = _searchUIStateFlow.asStateFlow()
     val subscribedFlow =
-        repo.subscribedChannelFlow().stateIn(viewModelScope, SharingStarted.Lazily, listOf())
+        repo.subscribedChannelsFlow().stateIn(viewModelScope, SharingStarted.Lazily, listOf())
 
     fun searchPodcasts(keyword: String) {
         if (keyword.isBlank()) return

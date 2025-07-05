@@ -16,6 +16,9 @@ class Repository(context: Context) {
     suspend fun subscribe(channel: PChannel, subscribe: Boolean) =
         podCastDao.subscribe(channel, subscribe)
 
+    suspend fun updateLastUpdate(id: Long, lastUpdate: Instant) =
+        podCastDao.updateLastUpdate(id, lastUpdate)
+
     suspend fun upsertPlayItem(playItem: PlayItem): PlayItem = podCastDao.upsertPlayItem(playItem)
     suspend fun setCurrentPlayItem(playItem: PlayItem): PlayItem {
         // 登録を全て消し１つのみ登録する様にする。
@@ -41,7 +44,8 @@ class Repository(context: Context) {
     fun getPodCastByFeedUrlFlow(feedUrl: String) =
         podCastDao.getPodCastByFeedUrlFlow(feedUrl).distinctUntilChanged()
 
-    fun subscribedChannelFlow() = podCastDao.subscribedChannelFlow()
+    suspend fun subscribedChannels() = podCastDao.subscribedChannels()
+    fun subscribedChannelsFlow() = podCastDao.subscribedChannelsFlow()
     fun getRecentPlaysFlow(limits: Int) = podCastDao.getRecentPlaysFlow(limits)
     fun getLastPlayedItemFlow() = podCastDao.getLastPlayedItemFlow()
     fun getLatestCompletedItemFlow() =

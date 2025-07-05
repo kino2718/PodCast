@@ -58,7 +58,10 @@ interface PodCastDao {
 
 
     @Query("select * from PChannel where subscribed = true order by lastUpdate desc")
-    fun subscribedChannelFlow(): Flow<List<PChannel>>
+    suspend fun subscribedChannels(): List<PChannel>
+
+    @Query("select * from PChannel where subscribed = true order by lastUpdate desc")
+    fun subscribedChannelsFlow(): Flow<List<PChannel>>
 
     // uniqueであるfeedUrlで既登録かを確認しそうならそのidを使用する。
     // そして他のデータは全てupsertされる。
@@ -67,6 +70,10 @@ interface PodCastDao {
         val id = getChannelByFeedUrl(channel.feedUrl)?.id ?: 0L
         upsertChannel(channel.copy(id = id))
     }
+
+    @Transaction
+    @Query("update PChannel set lastUpdate = :lastUpdate where id = :id")
+    suspend fun updateLastUpdate(id: Long, lastUpdate: Instant): Int
 
     @Upsert
     suspend fun upsertEpisode(episode: Episode): Long
@@ -213,7 +220,7 @@ interface PodCastDao {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     fun getLastPlayedItemFlow(): Flow<List<PlayItem>> {
-        return subscribedChannelFlow().flatMapLatest { channels ->
+        return subscribedChannelsFlow().flatMapLatest { channels ->
             val flows = channels.map { channel ->
                 getLastPlayedEpisodeByIdFlow(channel.id)
                     .distinctUntilChanged()
@@ -235,7 +242,7 @@ interface PodCastDao {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     fun getLatestCompletedItemFlow(): Flow<List<PlayItem>> {
-        return subscribedChannelFlow().flatMapLatest { channels ->
+        return subscribedChannelsFlow().flatMapLatest { channels ->
             val flows = channels.map { channel ->
                 getLatestCompletedEpisodeByIdFlow(channel.id)
                     .distinctUntilChanged()

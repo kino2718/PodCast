@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.transform
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import net.kino2718.podcast.data.PChannel
@@ -25,7 +26,7 @@ import kotlin.time.Duration.Companion.days
 class HomeViewModel(app: Application) : AndroidViewModel(app) {
     private val repo = Repository(app)
     val subscribedFlow =
-        repo.subscribedChannelFlow().stateIn(viewModelScope, SharingStarted.Lazily, listOf())
+        repo.subscribedChannelsFlow().stateIn(viewModelScope, SharingStarted.Lazily, listOf())
 
     // 最近再生したPlay Item
     val recentPlaysFlow = repo.getRecentPlaysFlow(NUM_RECENT_PLAYS)
@@ -42,6 +43,24 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
                 loadRss(channel.feedUrl)?.let { rssData ->
                     rssDataCache[channel.feedUrl] = rssData
                     rssData
+                }
+            }
+        }
+    }
+
+    init {
+        viewModelScope.launch {
+            // 登録しているPodCastのrssを読みPChannelのlastUpdateを更新する。
+            // タイミングはこのViewModelが作成された時に一度だけ実行する。
+            updateLastUpdate()
+        }
+    }
+
+    private suspend fun updateLastUpdate() {
+        repo.subscribedChannels().map { channel ->
+            getRssData(channel)?.let { rssData ->
+                rssData.channel.lastUpdate?.let { lastUpdate ->
+                    repo.updateLastUpdate(channel.id, lastUpdate)
                 }
             }
         }
@@ -79,7 +98,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     // latest episodes
     private val latestPlayItemsRssFlow =
         combine(
-            repo.subscribedChannelFlow(),
+            repo.subscribedChannelsFlow(),
             repo.getLatestCompletedItemFlow()
         ) { subscribedChannels, latestCompletedItems ->
             Pair(subscribedChannels, latestCompletedItems)
