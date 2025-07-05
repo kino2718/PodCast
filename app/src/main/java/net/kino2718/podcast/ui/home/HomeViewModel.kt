@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import net.kino2718.podcast.data.PChannel
@@ -35,13 +37,19 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     // 頻繁にネットにアクセスするのを避けるために一度読んだrss dataはキャッシュする。
     // キャッシュがクリアされるのはこのHomeViewModelオブジェクトが破棄される時。
     private val rssDataCache = mutableMapOf<String, PodCast>()
+    private val rssDataMutexes = mutableMapOf<String, Mutex>()
 
     private suspend fun getRssData(channel: PChannel): PodCast? {
         return rssDataCache[channel.feedUrl] ?: run {
             withContext(Dispatchers.IO) {
-                loadRss(channel.feedUrl)?.let { rssData ->
-                    rssDataCache[channel.feedUrl] = rssData
-                    rssData
+                val mutex = rssDataMutexes[channel.feedUrl] ?: Mutex().also {
+                    rssDataMutexes[channel.feedUrl] = it
+                }
+                mutex.withLock {
+                    loadRss(channel.feedUrl)?.let { rssData ->
+                        rssDataCache[channel.feedUrl] = rssData
+                        rssData
+                    }
                 }
             }
         }
