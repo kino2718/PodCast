@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
+import androidx.compose.material.icons.automirrored.filled.PlaylistAddCheck
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
@@ -38,6 +39,7 @@ import net.kino2718.podcast.R
 import net.kino2718.podcast.data.Episode
 import net.kino2718.podcast.data.PChannel
 import net.kino2718.podcast.data.PlayItem
+import net.kino2718.podcast.data.PlaylistItem
 import net.kino2718.podcast.ui.utils.format
 import net.kino2718.podcast.ui.utils.fromHtml
 import net.kino2718.podcast.ui.utils.toHMS
@@ -52,10 +54,13 @@ fun PodCastScreen(
     modifier: Modifier = Modifier,
     viewModel: PodCastViewModel = viewModel()
 ) {
+    val uiState by viewModel.uiState.collectAsState()
+    val playlistItems by viewModel.playlistItemsFlow.collectAsState()
+
     LaunchedEffect(feedUrl) {
         viewModel.load(feedUrl)
     }
-    val uiState by viewModel.uiState.collectAsState()
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -69,6 +74,7 @@ fun PodCastScreen(
             )
             EpisodeList(
                 uiState = it,
+                playlistItems = playlistItems,
                 selectEpisode = { episode ->
                     uiState?.let { state ->
                         val playItem = PlayItem(channel = state.podCast.channel, episode = episode)
@@ -159,6 +165,7 @@ private fun Channel(
 @Composable
 private fun EpisodeList(
     uiState: PodCastUIState,
+    playlistItems: List<PlaylistItem>,
     selectEpisode: (Episode) -> Unit,
     addToPlaylist: (Episode) -> Unit,
     download: (Episode) -> Unit,
@@ -167,9 +174,11 @@ private fun EpisodeList(
     LazyColumn(
         modifier = modifier.fillMaxSize()
     ) {
-        items(uiState.podCast.episodeList) {
+        items(uiState.podCast.episodeList) { episode ->
+            val inList = playlistItems.any { it.episodeId == episode.id }
             Episode(
-                episode = it,
+                episode = episode,
+                inList = inList,
                 selectEpisode = selectEpisode,
                 addToPlayList = addToPlaylist,
                 download = download,
@@ -181,6 +190,7 @@ private fun EpisodeList(
 @Composable
 private fun Episode(
     episode: Episode,
+    inList: Boolean,
     selectEpisode: (Episode) -> Unit,
     addToPlayList: (Episode) -> Unit,
     download: (Episode) -> Unit,
@@ -237,10 +247,13 @@ private fun Episode(
             // playlist
             IconButton(
                 onClick = { addToPlayList(episode) },
-                modifier = Modifier.size(dimensionResource(R.dimen.icon_button_small))
+                modifier = Modifier.size(dimensionResource(R.dimen.icon_button_small)),
+                enabled = !inList,
             ) {
+                val image = if (inList) Icons.AutoMirrored.Filled.PlaylistAddCheck
+                else Icons.AutoMirrored.Filled.PlaylistAdd
                 Icon(
-                    imageVector = Icons.AutoMirrored.Filled.PlaylistAdd,
+                    imageVector = image,
                     contentDescription = null,
                     modifier = Modifier.size(dimensionResource(R.dimen.icon_small)),
                 )
@@ -252,8 +265,8 @@ private fun Episode(
                 modifier = Modifier.size(dimensionResource(R.dimen.icon_button_small)),
                 enabled = !downloaded,
             ) {
-                val image =
-                    if (downloaded) Icons.Default.FileDownloadDone else Icons.Default.Download
+                val image = if (downloaded) Icons.Default.FileDownloadDone
+                else Icons.Default.Download
                 Icon(
                     imageVector = image,
                     contentDescription = null,

@@ -23,10 +23,13 @@ data class PodCastUIState(
 class PodCastViewModel(app: Application) : AndroidViewModel(app) {
     private val repo = Repository(app)
 
-    private val podCastFlowFromSearch = MutableSharedFlow<PodCast>()
+    private val podCastFlowFromRss = MutableSharedFlow<PodCast>()
+    val playlistItemsFlow = repo.getPlaylistItemsFlow().stateIn(
+        viewModelScope, SharingStarted.Lazily, listOf()
+    )
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val uiState = podCastFlowFromSearch.flatMapLatest { fromSearch ->
+    val uiState = podCastFlowFromRss.flatMapLatest { fromSearch ->
         // databaseに存在するか確認
         repo.getPodCastByFeedUrlFlow(fromSearch.channel.feedUrl).map { fromDb ->
             fromDb?.let {
@@ -64,7 +67,7 @@ class PodCastViewModel(app: Application) : AndroidViewModel(app) {
     // Urlからrssを読み解析してPodCastオブジェクトを作成してflowに流す。
     fun load(feedUrl: String) {
         viewModelScope.launch(Dispatchers.IO) {
-            loadRss(feedUrl)?.let { podCastFlowFromSearch.emit(it) }
+            loadRss(feedUrl)?.let { podCastFlowFromRss.emit(it) }
         }
     }
 

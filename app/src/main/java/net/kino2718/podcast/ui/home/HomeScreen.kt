@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
+import androidx.compose.material.icons.automirrored.filled.PlaylistAddCheck
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.FileDownloadDone
 import androidx.compose.material3.Icon
@@ -42,6 +43,7 @@ import coil.compose.AsyncImage
 import net.kino2718.podcast.R
 import net.kino2718.podcast.data.PChannel
 import net.kino2718.podcast.data.PlayItem
+import net.kino2718.podcast.data.PlaylistItem
 import net.kino2718.podcast.ui.utils.formatToDate
 import net.kino2718.podcast.ui.utils.toHMS
 import net.kino2718.podcast.ui.utils.toHttps
@@ -60,6 +62,7 @@ fun HomeScreen(
     val recentPlays by viewModel.recentPlaysFlow.collectAsState()
     val nextEpisodes by viewModel.nextPlayItemsFlow.collectAsState()
     val latestEpisodes by viewModel.latestPlayItemsFlow.collectAsState()
+    val playlistItems by viewModel.playlistItemsFlow.collectAsState()
 
     Column(
         modifier = modifier
@@ -77,6 +80,7 @@ fun HomeScreen(
         ShowPlayItemList(
             title = stringResource(R.string.title_recent_plays),
             playItemList = recentPlays,
+            playlistItems = playlistItems,
             selectItem = selectItem,
             addToPlaylist = addToPlaylist,
             download = download,
@@ -84,6 +88,7 @@ fun HomeScreen(
         ShowPlayItemList(
             title = stringResource(R.string.title_next_episodes),
             playItemList = nextEpisodes,
+            playlistItems = playlistItems,
             selectItem = selectItem,
             addToPlaylist = addToPlaylist,
             download = download,
@@ -91,6 +96,7 @@ fun HomeScreen(
         ShowPlayItemList(
             title = stringResource(R.string.title_latest_episodes),
             playItemList = latestEpisodes,
+            playlistItems = playlistItems,
             selectItem = selectItem,
             addToPlaylist = addToPlaylist,
             download = download,
@@ -136,6 +142,7 @@ private fun MySubscriptions(
 private fun ShowPlayItemList(
     title: String,
     playItemList: List<PlayItem>,
+    playlistItems: List<PlaylistItem>,
     selectItem: (PlayItem) -> Unit,
     addToPlaylist: (PlayItem) -> Unit,
     download: (PlayItem) -> Unit,
@@ -152,6 +159,8 @@ private fun ShowPlayItemList(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 items(playItemList) { playItem ->
+                    val inList = playlistItems.any { it.episodeId == playItem.episode.id }
+
                     Box(
                         modifier = Modifier
                             .size(
@@ -209,10 +218,14 @@ private fun ShowPlayItemList(
                                 // playlist
                                 IconButton(
                                     onClick = { addToPlaylist(playItem) },
-                                    modifier = Modifier.size(dimensionResource(R.dimen.icon_button_small))
+                                    modifier = Modifier.size(dimensionResource(R.dimen.icon_button_small)),
+                                    enabled = !inList,
                                 ) {
+                                    val image =
+                                        if (inList) Icons.AutoMirrored.Filled.PlaylistAddCheck
+                                        else Icons.AutoMirrored.Filled.PlaylistAdd
                                     Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.PlaylistAdd,
+                                        imageVector = image,
                                         contentDescription = null,
                                         modifier = Modifier.size(dimensionResource(R.dimen.icon_small)),
                                     )

@@ -191,6 +191,10 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    val playlistItemsFlow = repo.getPlaylistItemsFlow().stateIn(
+        viewModelScope, SharingStarted.Lazily, listOf()
+    )
+
     companion object {
         @Suppress("unused")
         private const val TAG = "HomeViewModel"
