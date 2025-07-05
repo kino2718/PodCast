@@ -217,7 +217,7 @@ private fun Episode(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = episode.title,
-                    maxLines = 2,
+                    maxLines = 3,
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.titleMedium,
                 )
