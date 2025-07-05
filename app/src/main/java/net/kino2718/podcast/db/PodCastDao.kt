@@ -64,11 +64,10 @@ interface PodCastDao {
     fun subscribedChannelsFlow(): Flow<List<PChannel>>
 
     // uniqueであるfeedUrlで既登録かを確認しそうならそのidを使用する。
-    // そして他のデータは全てupsertされる。
     @Transaction
     suspend fun subscribe(channel: PChannel, subscribe: Boolean) {
         val id = getChannelByFeedUrl(channel.feedUrl)?.id ?: 0L
-        upsertChannel(channel.copy(id = id))
+        upsertChannel(channel.copy(id = id, subscribed = subscribe))
     }
 
     @Transaction
