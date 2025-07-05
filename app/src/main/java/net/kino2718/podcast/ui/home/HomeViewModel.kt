@@ -20,7 +20,6 @@ import net.kino2718.podcast.data.PlayItem
 import net.kino2718.podcast.data.PodCast
 import net.kino2718.podcast.data.Repository
 import net.kino2718.podcast.ui.utils.loadRss
-import okhttp3.internal.toImmutableList
 import kotlin.time.Duration.Companion.days
 
 class HomeViewModel(app: Application) : AndroidViewModel(app) {
@@ -85,7 +84,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
                         )
                     )
                     // rss処理に時間がかかるので途中経過も表示する。
-                    emit(nextPlayItemList.toImmutableList())
+                    emit(nextPlayItemList.toList())
                 }
             }
         }
@@ -137,7 +136,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
                     emit(
                         latestPlayItemList
                             .sortedByDescending { it.episode.pubDate }
-                            .toImmutableList()
+                            .toList()
                     )
                 }
             }
@@ -165,7 +164,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
                     emit(
                         latestPlayItemList
                             .sortedByDescending { it.episode.pubDate }
-                            .toImmutableList()
+                            .toList()
                     )
                 }
             }

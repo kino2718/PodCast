@@ -6,7 +6,6 @@ import net.kino2718.podcast.data.PodCast
 import net.kino2718.podcast.utils.MyLog
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.internal.toImmutableList
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserFactory
 import java.io.StringReader
@@ -22,7 +21,7 @@ fun loadRss(feedUrl: String): PodCast? {
     }
     return response?.let { r ->
         if (r.isSuccessful) {
-            r.body?.string()?.let { xml ->
+            r.body.string().let { xml ->
                 parse(xml, feedUrl)?.let { podCast ->
                     // episodeにimageUrlが含まれていない場合はchanelのimageUrlで代用する。
                     val episodes = podCast.episodeList.map { episode ->
@@ -30,7 +29,10 @@ fun loadRss(feedUrl: String): PodCast? {
                     }
                     // 最新のepisodeの発行日付をchannelに設定
                     val latestPubDate = episodes.getOrNull(0)?.pubDate
-                    podCast.copy(channel = podCast.channel.copy(lastUpdate = latestPubDate), episodeList = episodes)
+                    podCast.copy(
+                        channel = podCast.channel.copy(lastUpdate = latestPubDate),
+                        episodeList = episodes
+                    )
                 }
             }
         } else null
@@ -129,7 +131,7 @@ private fun parse(xml: String, feedUrl: String): PodCast? {
         }
         PodCast(
             channel = currentChannel.build(),
-            episodeList = episodes.toImmutableList()
+            episodeList = episodes.toList()
         )
     } catch (e: Exception) {
         MyLog.e(TAG, "parse error: $e")
