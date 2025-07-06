@@ -9,6 +9,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.RemoveCircle
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,6 +28,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.media3.common.C
 import androidx.media3.common.Player
+import androidx.media3.common.util.Util.shouldShowPlayButton
 import coil.compose.AsyncImage
 import net.kino2718.podcast.R
 import net.kino2718.podcast.ui.utils.InteractiveLinearProgressIndicator
@@ -33,6 +38,7 @@ import net.kino2718.podcast.ui.utils.toHMS
 @Composable
 fun AudioMetadata(
     player: Player,
+    dismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val metadataState = rememberAudioMetadataState(player)
@@ -92,6 +98,17 @@ fun AudioMetadata(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         style = MaterialTheme.typography.titleSmall
+                    )
+                }
+                IconButton(
+                    onClick = { dismiss() },
+                    modifier = Modifier.size(dimensionResource(R.dimen.icon_button_small)),
+                    enabled = shouldShowPlayButton(player) // 停止時のみdismissできる
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.RemoveCircle,
+                        contentDescription = null,
+                        modifier = Modifier.size(dimensionResource(R.dimen.icon_small))
                     )
                 }
             }

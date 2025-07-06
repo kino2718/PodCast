@@ -44,7 +44,10 @@ fun MainScreen(
         bottomBar = {
             Column {
                 player?.let {
-                    if (showControl) Control(player = it)
+                    if (showControl) Control(
+                        player = it,
+                        dismiss = viewModel::dismissPlayer,
+                    )
                 }
                 NavigationBar {
                     NavItem.entries.forEach { item ->
@@ -102,11 +105,13 @@ fun MainScreen(
 @Composable
 fun Control(
     player: Player,
+    dismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Card(modifier = modifier.padding(vertical = dimensionResource(R.dimen.padding_extra_small))) {
         AudioPlayer(
             player = player,
+            dismiss = dismiss,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(dimensionResource(R.dimen.padding_small))

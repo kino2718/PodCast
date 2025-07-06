@@ -206,7 +206,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 return false
             }
 
-            val body = response.body ?: return false
+            val body = response.body
             try {
                 // バッファを使ってストリームから直接読み込み、ファイルへ書き出す
                 body.byteStream().use { input ->
@@ -280,6 +280,12 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             val file = File(it)
             if (file.exists() && file.isFile) downloadFile.toUri().path
             else null
+        }
+    }
+
+    fun dismissPlayer() {
+        viewModelScope.launch {
+            repo.clearCurrentPlayItem()
         }
     }
 

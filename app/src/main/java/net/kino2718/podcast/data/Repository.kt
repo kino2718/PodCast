@@ -26,6 +26,8 @@ class Repository(context: Context) {
         return podCastDao.upsertCurrentPlayItem(playItem)
     }
 
+    suspend fun clearCurrentPlayItem() = deleteAllPlayItem()
+
     suspend fun addToPlaylist(playItem: PlayItem) = podCastDao.addToPlaylist(playItem)
     private suspend fun deleteAllPlayItem() = podCastDao.deleteAllPlayItems()
     suspend fun getChannelById(id: Long) = podCastDao.getChannelById(id)

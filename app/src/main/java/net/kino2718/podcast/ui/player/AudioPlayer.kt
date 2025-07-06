@@ -13,6 +13,7 @@ import net.kino2718.podcast.R
 @Composable
 fun AudioPlayer(
     player: Player,
+    dismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -22,6 +23,7 @@ fun AudioPlayer(
     ) {
         AudioMetadata(
             player = player,
+            dismiss = dismiss,
             modifier = Modifier.fillMaxWidth(),
         )
 
