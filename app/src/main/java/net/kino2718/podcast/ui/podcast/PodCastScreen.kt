@@ -2,6 +2,7 @@ package net.kino2718.podcast.ui.podcast
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Arrangement.Absolute.spacedBy
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,6 +18,8 @@ import androidx.compose.material.icons.automirrored.filled.PlaylistAddCheck
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.FileDownloadDone
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.RemoveCircle
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
@@ -71,6 +74,10 @@ fun PodCastScreen(
             Channel(
                 uiState = it,
                 subscribe = viewModel::subscribe,
+            )
+            Tools(
+                ascendingOrder = it.ascendingOrder,
+                changeOrder = viewModel::changeOrder,
             )
             EpisodeList(
                 uiState = it,
@@ -160,6 +167,34 @@ private fun Channel(
             overflow = TextOverflow.Ellipsis,
             style = MaterialTheme.typography.bodyMedium,
         )
+    }
+}
+
+@Composable
+private fun Tools(
+    ascendingOrder: Boolean,
+    changeOrder: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(modifier = modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.padding_small)),
+            horizontalArrangement = spacedBy(dimensionResource(R.dimen.padding_small)),
+        ) {
+            // order
+            IconButton(
+                onClick = { changeOrder(!ascendingOrder) },
+                modifier = Modifier.size(dimensionResource(R.dimen.icon_button_small)),
+            ) {
+                val image = if (ascendingOrder) Icons.Default.KeyboardArrowUp
+                else Icons.Default.KeyboardArrowDown
+                Icon(
+                    imageVector = image,
+                    contentDescription = null,
+                    modifier = Modifier.size(dimensionResource(R.dimen.icon_small))
+                )
+            }
+        }
     }
 }
 

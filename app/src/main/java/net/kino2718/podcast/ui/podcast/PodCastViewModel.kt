@@ -6,7 +6,9 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -18,6 +20,7 @@ import net.kino2718.podcast.ui.utils.loadRss
 
 data class PodCastUIState(
     val podCast: PodCast,
+    val ascendingOrder: Boolean, // episode listの表示順
 )
 
 class PodCastViewModel(app: Application) : AndroidViewModel(app) {
@@ -29,23 +32,23 @@ class PodCastViewModel(app: Application) : AndroidViewModel(app) {
     )
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val uiState = podCastFlowFromRss.flatMapLatest { fromSearch ->
+    val uiState = podCastFlowFromRss.flatMapLatest { fromRss ->
         // databaseに存在するか確認
-        repo.getPodCastByFeedUrlFlow(fromSearch.channel.feedUrl).map { fromDb ->
+        repo.getPodCastByFeedUrlFlow(fromRss.channel.feedUrl).map { fromDb ->
             fromDb?.let {
                 // databaseに存在する。channelのidと状態をコピーする。
                 val fromDbChannel = fromDb.channel
-                val newChannel = fromSearch.channel.copy(
+                val newChannel = fromRss.channel.copy(
                     id = fromDbChannel.id,
                     subscribed = fromDbChannel.subscribed,
                 )
                 // dbからのitemのidと状態をコピーする。
-                val episodeListFromSearch = fromSearch.episodeList
+                val episodeListFromRss = fromRss.episodeList
                 val episodeListFromDb = fromDb.episodeList
-                val newItemList = episodeListFromSearch.map { itemFromSearch ->
-                    episodeListFromDb.find { itemFromDb -> itemFromSearch.guid == itemFromDb.guid }
+                val newEpisodeList = episodeListFromRss.map { episodeFromRss ->
+                    episodeListFromDb.find { itemFromDb -> episodeFromRss.guid == itemFromDb.guid }
                         ?.let { foundItem ->
-                            itemFromSearch.copy(
+                            episodeFromRss.copy(
                                 id = foundItem.id,
                                 channelId = foundItem.channelId,
                                 downloadFile = foundItem.downloadFile,
@@ -53,15 +56,24 @@ class PodCastViewModel(app: Application) : AndroidViewModel(app) {
                                 duration = foundItem.duration,
                                 isPlaybackCompleted = foundItem.isPlaybackCompleted,
                             )
-                        } ?: itemFromSearch
+                        } ?: episodeFromRss
                 }
                 PodCastUIState(
-                    fromSearch.copy(channel = newChannel, episodeList = newItemList)
+                    podCast = fromRss.copy(channel = newChannel, episodeList = newEpisodeList),
+                    ascendingOrder = false,
                 )
 
-            } ?: PodCastUIState(podCast = fromSearch) // このpodcastはdatabaseには存在しない。
+            } ?: PodCastUIState(podCast = fromRss, false) // このpodcastはdatabaseには存在しない。
+        }.combine(_ascendingOrder) { podCastUIState, ascendingOrder ->
+            val podCast = podCastUIState.podCast
+            val episodeList = podCast.episodeList
+            val sortedList = if (ascendingOrder) episodeList.sortedBy { it.pubDate }
+            else episodeList.sortedByDescending { it.pubDate }
+            podCastUIState.copy(
+                podCast = podCast.copy(episodeList = sortedList),
+                ascendingOrder = ascendingOrder
+            )
         }
-
     }.stateIn(viewModelScope, SharingStarted.Lazily, null)
 
     // Urlからrssを読み解析してPodCastオブジェクトを作成してflowに流す。
@@ -75,6 +87,12 @@ class PodCastViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             repo.subscribe(channel, subscribe)
         }
+    }
+
+    private val _ascendingOrder = MutableStateFlow(false)
+
+    fun changeOrder(order: Boolean) {
+        _ascendingOrder.value = order
     }
 
     companion object {
