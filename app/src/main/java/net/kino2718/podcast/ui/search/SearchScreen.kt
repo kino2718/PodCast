@@ -60,14 +60,14 @@ fun SearchScreen(
             onValueChange = { query = it },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
-            label = { Text("Search Podcasts") },
+            label = { Text(stringResource(R.string.search_podcasts)) },
             trailingIcon = {
                 IconButton(onClick = {
                     viewModel.searchPodcasts(query)
                     keyboardController?.hide()
                 }
                 ) {
-                    Icon(Icons.Default.Search, contentDescription = "Search")
+                    Icon(Icons.Default.Search, contentDescription = null)
                 }
             }
         )
