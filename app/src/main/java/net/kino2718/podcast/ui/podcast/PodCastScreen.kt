@@ -15,9 +15,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.automirrored.filled.PlaylistAddCheck
 import androidx.compose.material.icons.filled.AddCircle
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.FileDownloadDone
+import androidx.compose.material.icons.filled.RemoveCircle
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -138,7 +138,8 @@ private fun Channel(
                     style = MaterialTheme.typography.titleMedium
                 )
             }
-            val image = if (!channel.subscribed) Icons.Filled.AddCircle else Icons.Default.Delete
+            val image =
+                if (!channel.subscribed) Icons.Default.AddCircle else Icons.Default.RemoveCircle
             IconButton(
                 onClick = {
                     subscribe(uiState.podCast.channel, !channel.subscribed)

@@ -12,9 +12,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.FileDownloadDone
+import androidx.compose.material.icons.filled.RemoveCircle
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -94,7 +94,7 @@ private fun Header(
             onClick = deleteAll,
         ) {
             Icon(
-                imageVector = Icons.Default.Delete,
+                imageVector = Icons.Default.RemoveCircle,
                 contentDescription = null,
                 modifier = Modifier.size(dimensionResource(R.dimen.icon_medium))
             )
@@ -207,7 +207,7 @@ private fun Episode(
                 modifier = Modifier.size(dimensionResource(R.dimen.icon_button_small)),
             ) {
                 Icon(
-                    imageVector = Icons.Default.Delete,
+                    imageVector = Icons.Default.RemoveCircle,
                     contentDescription = null,
                     modifier = Modifier.size(dimensionResource(R.dimen.icon_small))
                 )
