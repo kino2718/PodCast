@@ -23,19 +23,26 @@ import androidx.compose.material.icons.filled.FileDownloadDone
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.RemoveCircle
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -83,19 +90,46 @@ fun PodCastScreen(
 
             val listState = rememberLazyListState()
             val scope = rememberCoroutineScope()
+            var searchFrom by remember { mutableIntStateOf(0) }
+            var oldQuery by remember { mutableStateOf("") }
 
             Tools(
                 ascendingOrder = state.ascendingOrder,
-                changeOrder = viewModel::changeOrder,
+                changeOrder = {
+                    viewModel.changeOrder(it)
+                    searchFrom = 0 // 検索開始位置をリセット
+                },
                 lastPlayed = {
                     val index = state.podCast.episodeList.withIndex()
                         .maxByOrNull { indexedValue ->
                             indexedValue.value.lastPlayed?.toEpochMilliseconds() ?: 0L
                         }?.index
-                    MyLog.d(TAG, "index = $index")
                     index?.let {
+                        searchFrom = 0 // 検索開始位置をリセット
                         scope.launch {
                             listState.scrollToItem(index)
+                        }
+                    }
+                },
+                searchEpisodes = { query ->
+                    if (query.isNotEmpty()) {
+                        if (query != oldQuery) {
+                            searchFrom = 0
+                            oldQuery = query
+                        }
+                        val episodes = state.podCast.episodeList
+                        val offset = episodes.subList(searchFrom, episodes.size).indexOfFirst {
+                            it.title.contains(query, ignoreCase = true)
+                        }
+                        if (offset < 0) searchFrom = 0 // 見つからなかった
+                        else {
+                            // 見つかった
+                            val index = searchFrom + offset
+                            MyLog.d(TAG, "searchEpisodes, query = $query, index = $index")
+                            searchFrom = index + 1
+                            scope.launch {
+                                listState.scrollToItem(index)
+                            }
                         }
                     }
                 }
@@ -197,6 +231,7 @@ private fun Tools(
     ascendingOrder: Boolean,
     changeOrder: (Boolean) -> Unit,
     lastPlayed: () -> Unit,
+    searchEpisodes: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Card(modifier = modifier.fillMaxWidth()) {
@@ -227,6 +262,37 @@ private fun Tools(
                     style = MaterialTheme.typography.labelMedium,
                 )
             }
+            // search
+            var query by remember { mutableStateOf("") }
+            val keyboardController = LocalSoftwareKeyboardController.current
+            TextField(
+                value = query,
+                onValueChange = { query = it },
+                modifier = Modifier.weight(1f),
+                textStyle = MaterialTheme.typography.labelMedium,
+                singleLine = true,
+                label = {
+                    Text(
+                        text = stringResource(R.string.search_episodes),
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                },
+                trailingIcon = {
+                    IconButton(
+                        onClick = {
+                            searchEpisodes(query)
+                            keyboardController?.hide()
+                        },
+                        modifier = Modifier.size(dimensionResource(R.dimen.icon_button_small))
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = null,
+                            modifier = Modifier.size(dimensionResource(R.dimen.icon_small))
+                        )
+                    }
+                }
+            )
         }
     }
 }
