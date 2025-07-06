@@ -9,6 +9,7 @@
     <string name="month_day_template">%1$d月%2$d日</string>
     <string name="year_month_day_template">%1$d年%2$d月%3$d日</string>
     <string name="playlist">Playlist</string>
+    <string name="last_played">Last Played</string>
 
     <!-- player -->
     <string name="play_pause_button_play" translatable="false">Play</string>

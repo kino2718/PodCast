@@ -11,7 +11,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.automirrored.filled.PlaylistAddCheck
@@ -26,10 +28,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
@@ -38,6 +42,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.media3.common.C
 import coil.compose.AsyncImage
+import kotlinx.coroutines.launch
 import net.kino2718.podcast.R
 import net.kino2718.podcast.data.Episode
 import net.kino2718.podcast.data.PChannel
@@ -47,6 +52,7 @@ import net.kino2718.podcast.ui.utils.format
 import net.kino2718.podcast.ui.utils.fromHtml
 import net.kino2718.podcast.ui.utils.toHMS
 import net.kino2718.podcast.ui.utils.toHttps
+import net.kino2718.podcast.utils.MyLog
 
 @Composable
 fun PodCastScreen(
@@ -59,7 +65,6 @@ fun PodCastScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val playlistItems by viewModel.playlistItemsFlow.collectAsState()
-
     LaunchedEffect(feedUrl) {
         viewModel.load(feedUrl)
     }
@@ -70,18 +75,35 @@ fun PodCastScreen(
             .padding(dimensionResource(R.dimen.padding_medium)),
         verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.padding_small))
     ) {
-        uiState?.let {
+        uiState?.let { state ->
             Channel(
-                uiState = it,
+                uiState = state,
                 subscribe = viewModel::subscribe,
             )
+
+            val listState = rememberLazyListState()
+            val scope = rememberCoroutineScope()
+
             Tools(
-                ascendingOrder = it.ascendingOrder,
+                ascendingOrder = state.ascendingOrder,
                 changeOrder = viewModel::changeOrder,
+                lastPlayed = {
+                    val index = state.podCast.episodeList.withIndex()
+                        .maxByOrNull { indexedValue ->
+                            indexedValue.value.lastPlayed?.toEpochMilliseconds() ?: 0L
+                        }?.index
+                    MyLog.d(TAG, "index = $index")
+                    index?.let {
+                        scope.launch {
+                            listState.scrollToItem(index)
+                        }
+                    }
+                }
             )
             EpisodeList(
-                uiState = it,
+                uiState = state,
                 playlistItems = playlistItems,
+                listState = listState,
                 selectEpisode = { episode ->
                     uiState?.let { state ->
                         val playItem = PlayItem(channel = state.podCast.channel, episode = episode)
@@ -174,12 +196,14 @@ private fun Channel(
 private fun Tools(
     ascendingOrder: Boolean,
     changeOrder: (Boolean) -> Unit,
+    lastPlayed: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Card(modifier = modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.padding_small)),
             horizontalArrangement = spacedBy(dimensionResource(R.dimen.padding_small)),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             // order
             IconButton(
@@ -194,6 +218,15 @@ private fun Tools(
                     modifier = Modifier.size(dimensionResource(R.dimen.icon_small))
                 )
             }
+            // last played
+            TextButton(
+                onClick = lastPlayed,
+            ) {
+                Text(
+                    text = stringResource(R.string.last_played),
+                    style = MaterialTheme.typography.labelMedium,
+                )
+            }
         }
     }
 }
@@ -202,13 +235,15 @@ private fun Tools(
 private fun EpisodeList(
     uiState: PodCastUIState,
     playlistItems: List<PlaylistItem>,
+    listState: LazyListState,
     selectEpisode: (Episode) -> Unit,
     addToPlaylist: (Episode) -> Unit,
     download: (Episode) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
-        modifier = modifier.fillMaxSize()
+        modifier = modifier.fillMaxSize(),
+        state = listState,
     ) {
         items(uiState.podCast.episodeList) { episode ->
             val inList = playlistItems.any { it.episodeId == episode.id }

@@ -55,6 +55,7 @@ class PodCastViewModel(app: Application) : AndroidViewModel(app) {
                                 playbackPosition = foundItem.playbackPosition,
                                 duration = foundItem.duration,
                                 isPlaybackCompleted = foundItem.isPlaybackCompleted,
+                                lastPlayed = foundItem.lastPlayed,
                             )
                         } ?: episodeFromRss
                 }
