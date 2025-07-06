@@ -182,9 +182,9 @@ private fun ShowPlayItemList(
                         )
                         Column(modifier = Modifier.padding(dimensionResource(R.dimen.padding_small))) {
                             val channel = playItem.channel
-                            val item = playItem.episode
+                            val episode = playItem.episode
                             Text(
-                                text = item.title,
+                                text = episode.title,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                                 style = MaterialTheme.typography.titleSmall,
@@ -197,17 +197,19 @@ private fun ShowPlayItemList(
                             )
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Column(modifier = Modifier.weight(1f)) {
-                                    item.pubDate?.formatToDate(LocalContext.current)?.let { date ->
-                                        Text(
-                                            text = date,
-                                            style = MaterialTheme.typography.titleSmall
-                                        )
-                                    }
-                                    val playbackPosition = item.playbackPosition
-                                    val duration = item.duration
+                                    episode.pubDate?.formatToDate(LocalContext.current)
+                                        ?.let { date ->
+                                            Text(
+                                                text = date,
+                                                style = MaterialTheme.typography.titleSmall
+                                            )
+                                        }
+                                    val playbackPosition = episode.playbackPosition
+                                    val duration = episode.duration
                                     if (duration != C.TIME_UNSET) {
                                         val text =
-                                            if (0L < playbackPosition) "${playbackPosition.toHMS()}/${duration.toHMS()}"
+                                            if (episode.isPlaybackCompleted) stringResource(R.string.playback_done)
+                                            else if (0L < playbackPosition) "${playbackPosition.toHMS()}/${duration.toHMS()}"
                                             else duration.toHMS()
                                         Text(
                                             text = text,

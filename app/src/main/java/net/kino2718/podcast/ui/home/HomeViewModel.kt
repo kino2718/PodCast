@@ -7,7 +7,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -103,81 +102,37 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         .stateIn(viewModelScope, SharingStarted.Lazily, listOf())
 
     // latest episodes
-    private val latestPlayItemsRssFlow =
-        combine(
-            repo.subscribedChannelsFlow(),
-            repo.getLatestCompletedItemFlow()
-        ) { subscribedChannels, latestCompletedItems ->
-            Pair(subscribedChannels, latestCompletedItems)
-        }.transform { pair ->
-            val noListenedChannels =
-                pair.first.toMutableList() // 登録チャネルで再生完了episodeが１つもないchannelを構築するためのList
-            val latestCompletedItems = pair.second
-            val latestPlayItemList = mutableListOf<PlayItem>()
-            latestCompletedItems.map { latestCompletedItem -> // 各channelで再生完了した最新のPlayItem
-                // このchannelはnoListenedChannelsから削除する
-                noListenedChannels.removeIf { it.feedUrl == latestCompletedItem.channel.feedUrl }
-                // このchannelのrss dataを取得
-                getRssData(latestCompletedItem.channel)?.let { rssData -> // そのchannelのrss data
-                    // rss dataの中から検索
-                    val index =
-                        rssData.episodeList.indexOfFirst { it.guid == latestCompletedItem.episode.guid }
-                    // 再生完了した最新のものより新しいepisodeを取得する
-                    val candidateEpisodes = if (0 <= index) rssData.episodeList.subList(0, index)
-                    else rssData.episodeList // 検索がヒットしなかった場合
-                    val now = Clock.System.now()
-                    candidateEpisodes
-                        .filter {
-                            // ここ最近に限定する
-                            it.pubDate?.let { pubDate ->
-                                now - pubDate < 14.days
-                            } ?: false
-                        }
-                        .forEach { episode ->
-                            latestPlayItemList.add(
-                                PlayItem(
-                                    channel = latestCompletedItem.channel,
-                                    episode = episode
-                                )
+    private val latestPlayItemsRssFlow = repo.subscribedChannelsFlow().transform { channels ->
+        val latestPlayItemList = mutableListOf<PlayItem>()
+        channels.map { channel ->
+            // このchannelのrss dataを取得
+            getRssData(channel)?.let { rssData -> // channelのrss data
+                val candidateEpisodes = rssData.episodeList
+                val now = Clock.System.now()
+                candidateEpisodes
+                    .filter {
+                        // ここ最近に限定する
+                        it.pubDate?.let { pubDate ->
+                            now - pubDate < 14.days
+                        } ?: false
+                    }
+                    .forEach { episode ->
+                        latestPlayItemList.add(
+                            PlayItem(
+                                channel = channel,
+                                episode = episode
                             )
-                        }
-                    emit(
-                        latestPlayItemList
-                            .sortedByDescending { it.episode.pubDate }
-                            .toList()
-                    )
-                }
+                        )
+                    }
+                emit(
+                    latestPlayItemList
+                        .sortedByDescending { it.episode.pubDate }
+                        .toList()
+                )
             }
-            // 登録channelでで再生完了episodeが１つもないchannelの処理
-            noListenedChannels.map { channel ->
-                // このchannelのrss dataを取得
-                getRssData(channel)?.let { rssData -> // channelのrss data
-                    val candidateEpisodes = rssData.episodeList
-                    val now = Clock.System.now()
-                    candidateEpisodes
-                        .filter {
-                            // ここ最近に限定する
-                            it.pubDate?.let { pubDate ->
-                                now - pubDate < 14.days
-                            } ?: false
-                        }
-                        .forEach { episode ->
-                            latestPlayItemList.add(
-                                PlayItem(
-                                    channel = channel,
-                                    episode = episode
-                                )
-                            )
-                        }
-                    emit(
-                        latestPlayItemList
-                            .sortedByDescending { it.episode.pubDate }
-                            .toList()
-                    )
-                }
-            }
-
         }
+
+    }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val latestPlayItemsFlow = changeEpisodesIfExist(latestPlayItemsRssFlow)
