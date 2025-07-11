@@ -19,30 +19,30 @@ data class PChannel(
     val subscribed: Boolean = false,
     // 以下は最新のitemから取得する
     val lastUpdate: Instant? = null,
+)
+
+data class MutablePChannel(
+    var id: Long = 0L,
+    var feedUrl: String = "",
+    var title: String = "",
+    var author: String = "",
+    var description: String = "",
+    var link: String = "",
+    var imageUrl: String? = null,
+    var subscribed: Boolean = false,
+    var lastUpdate: Instant? = null,
 ) {
-    data class Builder(
-        var id: Long = 0L,
-        var feedUrl: String = "",
-        var title: String = "",
-        var author: String = "",
-        var description: String = "",
-        var link: String = "",
-        var imageUrl: String? = null,
-        var subscribed: Boolean = false,
-        var lastUpdate: Instant? = null,
-    ) {
-        fun build(): PChannel {
-            return PChannel(
-                id = id,
-                feedUrl = feedUrl,
-                title = title,
-                author = author,
-                description = description,
-                link = link,
-                imageUrl = imageUrl,
-                subscribed = subscribed,
-                lastUpdate = lastUpdate
-            )
-        }
+    fun toImmutable(): PChannel {
+        return PChannel(
+            id = id,
+            feedUrl = feedUrl,
+            title = title,
+            author = author,
+            description = description,
+            link = link,
+            imageUrl = imageUrl,
+            subscribed = subscribed,
+            lastUpdate = lastUpdate
+        )
     }
 }

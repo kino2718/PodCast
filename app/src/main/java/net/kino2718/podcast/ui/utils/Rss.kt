@@ -1,7 +1,8 @@
 package net.kino2718.podcast.ui.utils
 
 import net.kino2718.podcast.data.Episode
-import net.kino2718.podcast.data.PChannel
+import net.kino2718.podcast.data.MutableEpisode
+import net.kino2718.podcast.data.MutablePChannel
 import net.kino2718.podcast.data.PodCast
 import net.kino2718.podcast.utils.MyLog
 import okhttp3.OkHttpClient
@@ -46,9 +47,9 @@ private fun parse(xml: String, feedUrl: String): PodCast? {
         parser.setInput(StringReader(xml))
         var event = parser.eventType
 
-        val currentChannel = PChannel.Builder()
+        val currentChannel = MutablePChannel()
         currentChannel.feedUrl = feedUrl
-        var currentEpisode = Episode.Builder()
+        var currentEpisode = MutableEpisode()
         val episodes = mutableListOf<Episode>()
         var inItem = false // item解析中
         while (event != XmlPullParser.END_DOCUMENT) {
@@ -57,7 +58,7 @@ private fun parse(xml: String, feedUrl: String): PodCast? {
                     when (parser.name) {
                         "item" -> {
                             inItem = true
-                            currentEpisode = Episode.Builder()
+                            currentEpisode = MutableEpisode()
                         }
 
                         "guid" -> {
@@ -122,7 +123,7 @@ private fun parse(xml: String, feedUrl: String): PodCast? {
 
                 XmlPullParser.END_TAG -> {
                     if (parser.name == "item") {
-                        episodes.add(currentEpisode.build())
+                        episodes.add(currentEpisode.toImmutable())
                         inItem = false
                     }
                 }
@@ -130,7 +131,7 @@ private fun parse(xml: String, feedUrl: String): PodCast? {
             event = parser.next()
         }
         PodCast(
-            channel = currentChannel.build(),
+            channel = currentChannel.toImmutable(),
             episodeList = episodes.toList()
         )
     } catch (e: Exception) {
