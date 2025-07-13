@@ -24,7 +24,6 @@ import kotlinx.coroutines.guava.await
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.datetime.Clock
 import net.kino2718.podcast.data.Episode
 import net.kino2718.podcast.data.PlayItem
 import net.kino2718.podcast.data.Repository
@@ -37,6 +36,7 @@ import okhttp3.Request
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.time.Instant
 import kotlin.math.abs
 import kotlin.math.max
 
@@ -97,7 +97,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                             val episode = currentPlayItem.episode
                             val completed = abs(duration - position) < 2000 // 終了まで2秒以内なら再生完了とする
                             repo.updatePlaybackInfos(
-                                episode.id, position, duration, completed, Clock.System.now()
+                                episode.id, position, duration, completed, Instant.now()
                             )
                         }
                     }

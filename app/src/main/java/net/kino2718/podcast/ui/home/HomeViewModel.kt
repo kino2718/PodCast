@@ -15,13 +15,13 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.Clock
 import net.kino2718.podcast.data.PChannel
 import net.kino2718.podcast.data.PlayItem
 import net.kino2718.podcast.data.PodCast
 import net.kino2718.podcast.data.Repository
 import net.kino2718.podcast.ui.utils.loadRss
-import kotlin.time.Duration.Companion.days
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 class HomeViewModel(app: Application) : AndroidViewModel(app) {
     private val repo = Repository(app)
@@ -108,12 +108,12 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             // このchannelのrss dataを取得
             getRssData(channel)?.let { rssData -> // channelのrss data
                 val candidateEpisodes = rssData.episodeList
-                val now = Clock.System.now()
+                val now = Instant.now()
                 candidateEpisodes
                     .filter {
                         // ここ最近に限定する
                         it.pubDate?.let { pubDate ->
-                            now - pubDate < 14.days
+                            ChronoUnit.DAYS.between(pubDate, now) < 14L
                         } ?: false
                     }
                     .forEach { episode ->

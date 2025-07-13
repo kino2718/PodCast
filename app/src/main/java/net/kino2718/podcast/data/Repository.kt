@@ -4,11 +4,10 @@ import android.content.Context
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
 import net.kino2718.podcast.db.PodCastDatabase
 import java.io.File
-import kotlin.time.Duration.Companion.days
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 class Repository(context: Context) {
     private val podCastDao = PodCastDatabase.getInstance(context).podCastDao()
@@ -61,9 +60,9 @@ class Repository(context: Context) {
 
     suspend fun deleteOldDownloadFiles() {
         podCastDao.getDownloadedEpisodes().forEach { episode ->
-            val now = Clock.System.now()
+            val now = Instant.now()
             episode.lastPlayed?.let { lastPlayed ->
-                if (28.days < now - lastPlayed) {
+                if (28L < ChronoUnit.DAYS.between(lastPlayed, now)) {
                     podCastDao.updateDownloadFile(episode.id, null)
                     episode.downloadFile?.let { File(it).delete() }
                 }

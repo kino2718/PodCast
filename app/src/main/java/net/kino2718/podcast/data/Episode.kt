@@ -4,7 +4,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import kotlinx.datetime.Instant
+import java.time.Instant
 
 @Entity(
     indices = [Index(value = ["guid"], unique = true)],

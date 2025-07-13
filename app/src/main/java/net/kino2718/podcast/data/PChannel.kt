@@ -3,7 +3,7 @@ package net.kino2718.podcast.data
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import kotlinx.datetime.Instant
+import java.time.Instant
 
 @Entity(indices = [Index(value = ["feedUrl"], unique = true)])
 data class PChannel(

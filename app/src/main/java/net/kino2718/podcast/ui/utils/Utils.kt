@@ -8,19 +8,16 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.fromHtml
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.core.net.toUri
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toKotlinInstant
-import kotlinx.datetime.toLocalDateTime
 import net.kino2718.podcast.R
 import java.io.File
 import java.text.NumberFormat
+import java.time.Instant
+import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import java.util.Locale
 import java.util.concurrent.TimeUnit
-import kotlin.time.Duration.Companion.days
 
 @Suppress("unused")
 private const val TAG = "Utils"
@@ -30,8 +27,8 @@ fun String.parseToInstant(): Instant {
     val formatter = DateTimeFormatter.RFC_1123_DATE_TIME.withLocale(Locale.ENGLISH)
     // ZonedDateTime にパース
     val zonedDateTime = ZonedDateTime.parse(this, formatter)
-    // ZonedDateTime → java.time.Instant → kotlinx.datetime.Instant
-    return zonedDateTime.toInstant().toKotlinInstant()
+    // ZonedDateTime → java.time.Instant
+    return zonedDateTime.toInstant()
 }
 
 fun String.hmsToSeconds(): Long {
@@ -49,31 +46,29 @@ fun String.hmsToSeconds(): Long {
 
 fun Int.format(): String = NumberFormat.getNumberInstance(Locale.US).format(this)
 
-fun Instant.format(timeZone: TimeZone = TimeZone.currentSystemDefault()): String {
-    val localDateTime = this.toLocalDateTime(timeZone)
-    return "${localDateTime.year}-" +
-            "${localDateTime.monthNumber.toString().padStart(2, '0')}-" +
-            "${localDateTime.dayOfMonth.toString().padStart(2, '0')} " +
-            "${localDateTime.hour.toString().padStart(2, '0')}:" +
-            localDateTime.minute.toString().padStart(2, '0')
+fun Instant.format(zoneId: ZoneId = ZoneId.systemDefault()): String {
+    val zonedDateTime = this.atZone(zoneId)
+    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+    val formatted = zonedDateTime.format(formatter)
+    return formatted
 }
 
 fun Instant.formatToDate(
     context: Context,
-    timeZone: TimeZone = TimeZone.currentSystemDefault()
+    zoneId: ZoneId = ZoneId.systemDefault()
 ): String {
-    val now = Clock.System.now()
-    val useYear = (30.days * 11 <= now - this)
+    val now = Instant.now()
+    val useYear = (30L * 11 <= ChronoUnit.DAYS.between(this, now))
     return if (useYear) {
         val template = context.getString(R.string.year_month_day_template)
-        val localDateTime = this.toLocalDateTime(timeZone)
+        val zonedDateTime = this.atZone(zoneId)
         String.format(
-            template, localDateTime.year, localDateTime.monthNumber, localDateTime.dayOfMonth
+            template, zonedDateTime.year, zonedDateTime.monthValue, zonedDateTime.dayOfMonth
         )
     } else {
         val template = context.getString(R.string.month_day_template)
-        val localDateTime = this.toLocalDateTime(timeZone)
-        String.format(template, localDateTime.monthNumber, localDateTime.dayOfMonth)
+        val zonedDateTime = this.atZone(zoneId)
+        String.format(template, zonedDateTime.monthValue, zonedDateTime.dayOfMonth)
     }
 }
 

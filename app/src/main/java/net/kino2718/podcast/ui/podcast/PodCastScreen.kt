@@ -102,7 +102,7 @@ fun PodCastScreen(
                 lastPlayed = {
                     val index = state.podCast.episodeList.withIndex()
                         .maxByOrNull { indexedValue ->
-                            indexedValue.value.lastPlayed?.toEpochMilliseconds() ?: 0L
+                            indexedValue.value.lastPlayed?.toEpochMilli() ?: 0L
                         }?.index
                     index?.let {
                         searchFrom = 0 // 検索開始位置をリセット

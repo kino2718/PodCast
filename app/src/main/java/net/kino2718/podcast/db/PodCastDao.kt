@@ -12,13 +12,13 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import kotlinx.datetime.Instant
 import net.kino2718.podcast.data.CurrentPlayItemId
 import net.kino2718.podcast.data.Episode
 import net.kino2718.podcast.data.PChannel
 import net.kino2718.podcast.data.PlayItem
 import net.kino2718.podcast.data.PlaylistItem
 import net.kino2718.podcast.data.PodCast
+import java.time.Instant
 
 @Dao
 interface PodCastDao {

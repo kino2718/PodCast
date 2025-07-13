@@ -81,6 +81,5 @@ dependencies {
     // その他
     implementation(libs.okhttp)
     implementation(libs.coil.compose)
-    implementation(libs.kotlinx.datetime)
     implementation(libs.kotlinx.coroutines.guava)
 }
