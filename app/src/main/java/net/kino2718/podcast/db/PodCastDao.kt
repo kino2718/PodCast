@@ -141,6 +141,9 @@ interface PodCastDao {
     @Query("select * from CurrentPlayItemId limit 1")
     fun getLastPlayedItemIdFlow(): Flow<CurrentPlayItemId?>
 
+    @Query("select * from CurrentPlayItemId limit 1")
+    suspend fun getLastPlayedItemId(): CurrentPlayItemId?
+
     // PlayItemに含まれる channel, episode を登録しidを確定する。
     // そしてCurrentPlayItemIdをそのidで更新する。
     @Transaction
@@ -238,21 +241,6 @@ interface PodCastDao {
                 "order by pubDate desc limit 1"
     )
     fun getLatestCompletedEpisodeByIdFlow(channelId: Long): Flow<Episode?>
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    fun getLatestCompletedItemFlow(): Flow<List<PlayItem>> {
-        return subscribedChannelsFlow().flatMapLatest { channels ->
-            val flows = channels.map { channel ->
-                getLatestCompletedEpisodeByIdFlow(channel.id)
-                    .distinctUntilChanged()
-                    .map { episode ->
-                        episode?.let { PlayItem(channel = channel, episode = it) }
-                    }
-            }
-            if (flows.isNotEmpty()) combine(flows) { arrays -> arrays.toList().filterNotNull() }
-            else flowOf(listOf())
-        }
-    }
 
     companion object {
         @Suppress("unused")

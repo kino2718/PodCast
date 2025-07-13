@@ -17,7 +17,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.guava.await
@@ -26,6 +25,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import net.kino2718.podcast.data.Episode
 import net.kino2718.podcast.data.PlayItem
+import net.kino2718.podcast.data.PlaylistItem
 import net.kino2718.podcast.data.Repository
 import net.kino2718.podcast.service.PlaybackService
 import net.kino2718.podcast.ui.utils.ObservePlaybackPosition
@@ -63,6 +63,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             initializePlayer()
             // この段階では_audioPlayerFlowは上記関数によって設定されている
             initializeController()
+            // playlistの監視
+            observePlaylist()
         }
     }
 
@@ -74,8 +76,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
         player.addListener(object : Player.Listener {
             override fun onPlayerError(error: PlaybackException) {
-                MyLog.d(TAG, "uri: ${player.currentMediaItem?.localConfiguration?.uri}")
-                MyLog.d(TAG, "tag: ${player.currentMediaItem?.localConfiguration?.tag}")
+                MyLog.e(TAG, "onPlayerError: $error")
             }
         })
 
@@ -107,28 +108,20 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private suspend fun initializeController() {
-        // 初期設定なので最初の1つだけ取り出しplayerに設定する。
-        lastPlayedItemIdFlow.first()?.let { playItemId ->
+        repo.getLastPlayedItemId()?.let { playItemId ->
             val channel = repo.getChannelById(playItemId.channelId)
-            val item = repo.getEpisodeById(playItemId.episodeId)
-            if (channel != null && item != null) {
+            val episode = repo.getEpisodeById(playItemId.episodeId)
+            if (channel != null && episode != null) {
                 val playItem =
-                    PlayItem(channel = channel, episode = item, playItemId.inPlaylist)
+                    PlayItem(channel = channel, episode = episode, playItemId.inPlaylist)
                 MyLog.d(TAG, "inPlaylist = ${playItemId.inPlaylist}")
                 _playItemFlow.value = playItem
                 if (playItemId.inPlaylist) {
-                    repo.getPlaylistItems()
-                    val playItemList = repo.getPlaylistItems().mapNotNull {
-                        val channel = repo.getChannelById(it.channelId)
-                        val episode = repo.getEpisodeById(it.episodeId)
-                        if (channel != null && episode != null) {
-                            PlayItem(channel = channel, episode = episode, true)
-                        } else null
-                    }
+                    val (playItemList, startIndex) = getPlayItemListAndStartIndex(
+                        repo.getPlaylistItems(),
+                        episode.id
+                    )
                     if (playItemList.isNotEmpty()) {
-                        val startIndex = playItemList.indexOfFirst {
-                            it.episode.id == item.id
-                        }.coerceAtLeast(0)
                         setPlayer(playItemList, startIndex, false)
                     } else {
                         setPlayer(listOf(playItem), 0, false)
@@ -138,6 +131,59 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
         }
+    }
+
+    // playlistが変更されまだ反映されていないことを示すフラグ
+    private var playlistChanged = false
+
+    private fun observePlaylist() {
+        viewModelScope.launch {
+            repo.getPlaylistItemsFlow().collect { playlistItems ->
+                repo.getLastPlayedItemId()?.let { playItemId ->
+                    if (playItemId.inPlaylist) {
+                        // playerが再生中でなければplaylistを更新する
+                        _audioPlayerFlow.value?.let { player ->
+                            if (!player.isPlaying) {
+                                playlistChanged = false
+                                val (playItemList, startIndex) = getPlayItemListAndStartIndex(
+                                    playlistItems,
+                                    playItemId.episodeId
+                                )
+                                if (playItemList.isNotEmpty()) {
+                                    setPlayer(playItemList, startIndex, false)
+                                }
+                            } else {
+                                playlistChanged = true
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private suspend fun getPlayItemListAndStartIndex(
+        playlistItems: List<PlaylistItem>,
+        startEpisodeId: Long
+    ): Pair<List<PlayItem>, Int> {
+        // channel.idとepisode.idのPlayListをPlayItemのlistに変換する。
+        val playItemList = playlistItems.mapNotNull {
+            val channel = repo.getChannelById(it.channelId)
+            val episode = repo.getEpisodeById(it.episodeId)
+            if (channel != null && episode != null) {
+                PlayItem(channel = channel, episode = episode, true)
+            } else null
+        }
+        // 再生開始位置を検索する。
+        val start = if (playItemList.isNotEmpty()) {
+            playItemList.indexOfFirst {
+                it.episode.id == startEpisodeId
+            }.coerceAtLeast(0) // 見つからない場合は0
+        } else {
+            // listが空
+            -1
+        }
+        return Pair(playItemList, start)
     }
 
     fun setPlayItem(playItem: PlayItem) {
