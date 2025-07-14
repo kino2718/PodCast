@@ -28,7 +28,7 @@ import net.kino2718.podcast.data.PlayItem
 import net.kino2718.podcast.data.PlaylistItem
 import net.kino2718.podcast.data.Repository
 import net.kino2718.podcast.service.PlaybackService
-import net.kino2718.podcast.ui.utils.ObservePlaybackPosition
+import net.kino2718.podcast.ui.utils.ObservePlaybackStates
 import net.kino2718.podcast.ui.utils.getExtensionFromUrl
 import net.kino2718.podcast.utils.MyLog
 import okhttp3.OkHttpClient
@@ -85,7 +85,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
         // observeは戻ってこないのでlaunchで別コルーチンとする
         viewModelScope.launch {
-            ObservePlaybackPosition().observe(
+            ObservePlaybackStates().observe(
                 player = player,
                 scope = viewModelScope,
                 onChanged = { index, position, duration ->
@@ -102,7 +102,13 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                             )
                         }
                     }
-                }
+                },
+                onPlayingChanged = { playing ->
+                    if (playlistChanged && !playing) {
+                        setPlaylist(repo.getPlaylistItems())
+                        playlistChanged = false
+                    }
+                },
             )
         }
     }
@@ -139,24 +145,28 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private fun observePlaylist() {
         viewModelScope.launch {
             repo.getPlaylistItemsFlow().collect { playlistItems ->
-                repo.getLastPlayedItemId()?.let { playItemId ->
-                    if (playItemId.inPlaylist) {
-                        // playerが再生中でなければplaylistを更新する
-                        _audioPlayerFlow.value?.let { player ->
-                            if (!player.isPlaying) {
-                                playlistChanged = false
-                                val (playItemList, startIndex) = getPlayItemListAndStartIndex(
-                                    playlistItems,
-                                    playItemId.episodeId
-                                )
-                                if (playItemList.isNotEmpty()) {
-                                    setPlayer(playItemList, startIndex, false)
-                                }
-                            } else {
-                                playlistChanged = true
-                            }
-                        }
+                // playerが再生中でなければplaylistを更新する
+                _audioPlayerFlow.value?.let { player ->
+                    if (!player.isPlaying) {
+                        setPlaylist(playlistItems)
+                        playlistChanged = false
+                    } else {
+                        playlistChanged = true
                     }
+                }
+            }
+        }
+    }
+
+    private suspend fun setPlaylist(playlistItems: List<PlaylistItem>) {
+        repo.getLastPlayedItemId()?.let { playItemId ->
+            if (playItemId.inPlaylist) {
+                val (playItemList, startIndex) = getPlayItemListAndStartIndex(
+                    playlistItems,
+                    playItemId.episodeId
+                )
+                if (playItemList.isNotEmpty()) {
+                    setPlayer(playItemList, startIndex, false)
                 }
             }
         }

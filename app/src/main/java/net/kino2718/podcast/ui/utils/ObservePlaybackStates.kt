@@ -2,19 +2,21 @@ package net.kino2718.podcast.ui.utils
 
 import androidx.media3.common.Player
 import androidx.media3.common.listen
+import androidx.media3.common.util.Util.shouldShowPlayButton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
-class ObservePlaybackPosition {
+class ObservePlaybackStates {
     private var observationJob: Job? = null
 
     suspend fun observe(
         player: Player,
         scope: CoroutineScope,
         onChanged: suspend (index: Int, position: Long, duration: Long) -> Unit,
+        onPlayingChanged: (suspend (playing: Boolean) -> Unit)? = null,
     ): Nothing {
         pollingWhenPlaying(player, scope, onChanged)
 
@@ -22,6 +24,7 @@ class ObservePlaybackPosition {
             scope.launch {
                 // play, pause時
                 if (events.contains(Player.EVENT_IS_PLAYING_CHANGED)) {
+                    onPlayingChanged?.invoke(!shouldShowPlayButton(player))
                     pollingWhenPlaying(player, scope, onChanged)
                 }
 

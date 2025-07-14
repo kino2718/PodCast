@@ -10,7 +10,7 @@ import androidx.compose.runtime.setValue
 import androidx.media3.common.C
 import androidx.media3.common.Player
 import kotlinx.coroutines.CoroutineScope
-import net.kino2718.podcast.ui.utils.ObservePlaybackPosition
+import net.kino2718.podcast.ui.utils.ObservePlaybackStates
 
 @Composable
 fun rememberPlaybackPositionState(player: Player): PlaybackPositionState {
@@ -31,7 +31,7 @@ class PlaybackPositionState(private val player: Player) {
         private set
 
     suspend fun observe(scope: CoroutineScope): Nothing {
-        ObservePlaybackPosition().observe(
+        ObservePlaybackStates().observe(
             player = player,
             scope = scope,
             onChanged = { index, position, duration ->
