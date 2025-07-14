@@ -8,7 +8,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.media3.common.Player
 import androidx.media3.common.listen
-import net.kino2718.podcast.utils.MyLog
 
 @Composable
 fun rememberSeekBackButtonState(player: Player): SeekBackButtonState {
@@ -22,7 +21,6 @@ class SeekBackButtonState(private val player: Player) {
         private set
 
     fun onClick() {
-        MyLog.d("SeekBackButtonState", "seekBackIncrement = ${player.seekBackIncrement}")
         player.seekBack()
     }
 

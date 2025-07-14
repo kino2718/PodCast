@@ -59,7 +59,6 @@ import net.kino2718.podcast.ui.utils.format
 import net.kino2718.podcast.ui.utils.fromHtml
 import net.kino2718.podcast.ui.utils.toHMS
 import net.kino2718.podcast.ui.utils.toHttps
-import net.kino2718.podcast.utils.MyLog
 
 @Composable
 fun PodCastScreen(
@@ -125,7 +124,6 @@ fun PodCastScreen(
                         else {
                             // 見つかった
                             val index = searchFrom + offset
-                            MyLog.d(TAG, "searchEpisodes, query = $query, index = $index")
                             searchFrom = index + 1
                             scope.launch {
                                 listState.scrollToItem(index)

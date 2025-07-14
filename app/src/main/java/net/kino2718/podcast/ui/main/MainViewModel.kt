@@ -120,7 +120,6 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             if (channel != null && episode != null) {
                 val playItem =
                     PlayItem(channel = channel, episode = episode, playItemId.inPlaylist)
-                MyLog.d(TAG, "inPlaylist = ${playItemId.inPlaylist}")
                 _playItemFlow.value = playItem
                 if (playItemId.inPlaylist) {
                     val (playItemList, startIndex) = getPlayItemListAndStartIndex(
@@ -274,7 +273,6 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                         }
                     }
                 }
-                MyLog.d(TAG, "File downloaded to ${destFile.absolutePath}")
                 return true
             } catch (e: IOException) {
                 MyLog.e(TAG, "Error saving file: ${e.message}")

@@ -47,7 +47,6 @@ import net.kino2718.podcast.data.PlaylistItem
 import net.kino2718.podcast.ui.utils.formatToDate
 import net.kino2718.podcast.ui.utils.toHMS
 import net.kino2718.podcast.ui.utils.toHttps
-import net.kino2718.podcast.utils.MyLog
 
 @Composable
 fun HomeScreen(
@@ -234,7 +233,6 @@ private fun ShowPlayItemList(
                                 }
                                 // download
                                 val downloaded = playItem.episode.downloadFile != null
-                                MyLog.d(TAG, "${playItem.episode.title}, downloaded = $downloaded")
                                 IconButton(
                                     onClick = { download(playItem) },
                                     modifier = Modifier.size(dimensionResource(R.dimen.icon_button_small)),
