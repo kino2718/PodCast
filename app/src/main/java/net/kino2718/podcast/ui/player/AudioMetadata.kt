@@ -113,6 +113,23 @@ fun AudioMetadata(
                 }
             }
 
+            val duration = positionState.playbackPosition.duration
+            val playbackPosition = positionState.playbackPosition.position
+            val progress = if (duration != 0L)
+                (playbackPosition.toFloat() / duration.toFloat())
+                    .coerceAtLeast(0f).coerceAtMost(1f)
+            else 0f
+            InteractiveLinearProgressIndicator(
+                progress = progress,
+                onTappedFraction = {
+                    // tap位置にseekする。
+                    val newPos = (duration * it).toLong()
+                        .coerceAtLeast(0L).coerceAtMost(duration - 100L)
+                    player.seekTo(newPos)
+                },
+                modifier = Modifier.fillMaxWidth(),
+            )
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.padding_small)),
@@ -144,23 +161,6 @@ fun AudioMetadata(
                     style = MaterialTheme.typography.labelSmall
                 )
             }
-
-            val duration = positionState.playbackPosition.duration
-            val playbackPosition = positionState.playbackPosition.position
-            val progress = if (duration != 0L)
-                (playbackPosition.toFloat() / duration.toFloat())
-                    .coerceAtLeast(0f).coerceAtMost(1f)
-            else 0f
-            InteractiveLinearProgressIndicator(
-                progress = progress,
-                onTappedFraction = {
-                    // tap位置にseekする。
-                    val newPos = (duration * it).toLong()
-                        .coerceAtLeast(0L).coerceAtMost(duration - 100L)
-                    player.seekTo(newPos)
-                },
-                modifier = Modifier.fillMaxWidth(),
-            )
         }
     }
 }
