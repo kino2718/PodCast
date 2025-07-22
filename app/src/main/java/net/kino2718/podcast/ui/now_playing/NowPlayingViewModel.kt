@@ -17,18 +17,20 @@ class NowPlayingViewModel(app: Application) : AndroidViewModel(app) {
     val repo = Repository(app)
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val playingPodcastInfo = repo.getLastPlayedItemIdFlow().flatMapLatest { currentPlayItemId ->
-        currentPlayItemId?.let { playItemId ->
-            repo.getChannelByIdFlow(playItemId.channelId)
-                .combine(repo.getEpisodeByIdFlow(playItemId.episodeId)) { channel, episode ->
+    val playingPodcastInfo = repo.getAppStatesFlow().flatMapLatest { state ->
+        val channelId = state?.channelId
+        val episodeId = state?.episodeId
+        if (channelId != null && episodeId != null) {
+            repo.getChannelByIdFlow(channelId)
+                .combine(repo.getEpisodeByIdFlow(episodeId)) { channel, episode ->
                     if (channel != null && episode != null)
                         PlayItem(
                             channel = channel,
                             episode = episode,
-                            inPlaylist = playItemId.inPlaylist
+                            inPlaylist = state.inPlaylist
                         )
                     else null
                 }.filterNotNull()
-        } ?: flowOf()
+        } else flowOf()
     }.stateIn(viewModelScope, SharingStarted.Lazily, null)
 }

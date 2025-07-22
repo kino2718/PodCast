@@ -48,10 +48,16 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private var _audioPlayerFlow = MutableStateFlow<Player?>(null)
     val audioPlayerFlow = _audioPlayerFlow.asStateFlow()
 
-    private val lastPlayedItemIdFlow = repo.getLastPlayedItemIdFlow()
-    val showControl = lastPlayedItemIdFlow
-        .map { it != null }
+    private val appStatesFlow = repo.getAppStatesFlow()
+    val showControl = appStatesFlow
+        .map { state ->
+            state?.channelId != null && state.episodeId != null
+        }
         .stateIn(viewModelScope, SharingStarted.Lazily, false)
+
+    val speedFlow = appStatesFlow
+        .map { it?.speed ?: 1.0f }
+        .stateIn(viewModelScope, SharingStarted.Lazily, 1.0f)
 
     private val _playItemFlow = MutableStateFlow<PlayItem?>(null)
 
@@ -73,6 +79,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             SessionToken(appContext, ComponentName(appContext, PlaybackService::class.java))
         val future = MediaController.Builder(appContext, sessionToken).buildAsync()
         val player = future.await()
+
+        repo.getAppStates()?.speed?.let { player.setPlaybackSpeed(it) }
 
         player.addListener(object : Player.Listener {
             override fun onPlayerError(error: PlaybackException) {
@@ -114,25 +122,32 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private suspend fun initializeController() {
-        repo.getLastPlayedItemId()?.let { playItemId ->
-            val channel = repo.getChannelById(playItemId.channelId)
-            val episode = repo.getEpisodeById(playItemId.episodeId)
-            if (channel != null && episode != null) {
-                val playItem =
-                    PlayItem(channel = channel, episode = episode, playItemId.inPlaylist)
-                _playItemFlow.value = playItem
-                if (playItemId.inPlaylist) {
-                    val (playItemList, startIndex) = getPlayItemListAndStartIndex(
-                        repo.getPlaylistItems(),
-                        episode.id
+        repo.getAppStates()?.let { playItemId ->
+            val channelId = playItemId.channelId
+            val episodeId = playItemId.episodeId
+            if (channelId != null && episodeId != null) {
+                val channel = repo.getChannelById(channelId)
+                val episode = repo.getEpisodeById(episodeId)
+                if (channel != null && episode != null) {
+                    val playItem = PlayItem(
+                        channel = channel,
+                        episode = episode,
+                        inPlaylist = playItemId.inPlaylist
                     )
-                    if (playItemList.isNotEmpty()) {
-                        setPlayer(playItemList, startIndex, false)
+                    _playItemFlow.value = playItem
+                    if (playItemId.inPlaylist) {
+                        val (playItemList, startIndex) = getPlayItemListAndStartIndex(
+                            repo.getPlaylistItems(),
+                            episode.id
+                        )
+                        if (playItemList.isNotEmpty()) {
+                            setPlayer(playItemList, startIndex, false)
+                        } else {
+                            setPlayer(listOf(playItem), 0, false)
+                        }
                     } else {
                         setPlayer(listOf(playItem), 0, false)
                     }
-                } else {
-                    setPlayer(listOf(playItem), 0, false)
                 }
             }
         }
@@ -158,11 +173,12 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private suspend fun setPlaylist(playlistItems: List<PlaylistItem>) {
-        repo.getLastPlayedItemId()?.let { playItemId ->
-            if (playItemId.inPlaylist) {
+        repo.getAppStates()?.let { playItemId ->
+            val episodeId = playItemId.episodeId
+            if (playItemId.inPlaylist && episodeId != null) {
                 val (playItemList, startIndex) = getPlayItemListAndStartIndex(
                     playlistItems,
-                    playItemId.episodeId
+                    episodeId
                 )
                 if (playItemList.isNotEmpty()) {
                     setPlayer(playItemList, startIndex, false)
@@ -335,6 +351,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             if (file.exists() && file.isFile) downloadFile.toUri().path
             else null
         }
+    }
+
+    fun setSpeed(speed: Float) {
+        _audioPlayerFlow.value?.setPlaybackSpeed(speed)
+        viewModelScope.launch { repo.updateSpeed(speed) }
     }
 
     fun dismissPlayer() {
