@@ -37,6 +37,7 @@ fun MainScreen(
     var current by rememberSaveable { mutableStateOf(NavItem.HOME) }
     val player by viewModel.audioPlayerFlow.collectAsState()
     val showControl by viewModel.showControl.collectAsState()
+    val speed by viewModel.speedFlow.collectAsState()
     val navController = rememberNavController()
 
     Scaffold(
@@ -47,6 +48,8 @@ fun MainScreen(
                     if (showControl) Control(
                         player = it,
                         dismiss = viewModel::dismissPlayer,
+                        speed = speed,
+                        onSpeedChange = viewModel::setSpeed,
                     )
                 }
                 NavigationBar {
@@ -106,12 +109,16 @@ fun MainScreen(
 fun Control(
     player: Player,
     dismiss: () -> Unit,
+    speed: Float,
+    onSpeedChange: (Float) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Card(modifier = modifier.padding(vertical = dimensionResource(R.dimen.padding_extra_small))) {
         AudioPlayer(
             player = player,
             dismiss = dismiss,
+            speed = speed,
+            onSpeedChange = onSpeedChange,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(dimensionResource(R.dimen.padding_small))

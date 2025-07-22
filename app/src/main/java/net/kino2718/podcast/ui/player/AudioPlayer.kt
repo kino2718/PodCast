@@ -14,6 +14,8 @@ import net.kino2718.podcast.R
 fun AudioPlayer(
     player: Player,
     dismiss: () -> Unit,
+    speed: Float,
+    onSpeedChange: (Float) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -29,6 +31,8 @@ fun AudioPlayer(
 
         AudioControls(
             player = player,
+            speed = speed,
+            onSpeedChange = onSpeedChange,
             modifier = Modifier.fillMaxWidth(),
         )
     }

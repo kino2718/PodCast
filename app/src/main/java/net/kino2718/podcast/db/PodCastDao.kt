@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import net.kino2718.podcast.data.CurrentPlayItemId
+import net.kino2718.podcast.data.AppStates
 import net.kino2718.podcast.data.Episode
 import net.kino2718.podcast.data.PChannel
 import net.kino2718.podcast.data.PlayItem
@@ -133,30 +133,46 @@ interface PodCastDao {
     fun getEpisodesByGuidsFlow(guids: List<String>): Flow<List<Episode>>
 
     @Upsert
-    suspend fun upsertPlayItemId(item: CurrentPlayItemId): Long
+    suspend fun upsertAppStates(item: AppStates): Long
 
-    @Query("delete from CurrentPlayItemId")
-    suspend fun deleteAllPlayItems()
+    @Query("select * from AppStates limit 1")
+    fun getAppStatesFlow(): Flow<AppStates?>
 
-    @Query("select * from CurrentPlayItemId limit 1")
-    fun getLastPlayedItemIdFlow(): Flow<CurrentPlayItemId?>
+    @Query("select * from AppStates limit 1")
+    suspend fun getAppStates(): AppStates?
 
-    @Query("select * from CurrentPlayItemId limit 1")
-    suspend fun getLastPlayedItemId(): CurrentPlayItemId?
+    @Query("update AppStates set speed = :speed")
+    suspend fun updateSpeed(speed: Float)
+
+    @Query("update AppStates set channelId = :channelId, episodeId = :episodeId, inPlaylist = :inPlaylist where id = :id")
+    suspend fun updateCurrentItem(id: Long, channelId: Long?, episodeId: Long?, inPlaylist: Boolean)
+
+    @Query("update AppStates set channelId = NULL, episodeId = NULL")
+    suspend fun clearCurrentItemIds()
 
     // PlayItemに含まれる channel, episode を登録しidを確定する。
-    // そしてCurrentPlayItemIdをそのidで更新する。
+    // そしてAppStatesをそのidで更新する。
     @Transaction
     suspend fun upsertCurrentPlayItem(playItem: PlayItem): PlayItem {
         val savedPlayItem = upsertPlayItem(playItem)
 
-        // 現在再生しているPlayItemを登録する。
-        val currentPlayItemId = CurrentPlayItemId(
-            channelId = savedPlayItem.channel.id,
-            episodeId = savedPlayItem.episode.id,
-            inPlaylist = savedPlayItem.inPlaylist,
-        )
-        upsertPlayItemId(currentPlayItemId)
+        val current = getAppStates()
+        if (current != null) {
+            updateCurrentItem(
+                id = current.id,
+                channelId = savedPlayItem.channel.id,
+                episodeId = savedPlayItem.episode.id,
+                inPlaylist = savedPlayItem.inPlaylist
+            )
+        } else {
+            val appStates = AppStates(
+                channelId = savedPlayItem.channel.id,
+                episodeId = savedPlayItem.episode.id,
+                inPlaylist = savedPlayItem.inPlaylist,
+                speed = 1.0f,
+            )
+            upsertAppStates(appStates)
+        }
         return savedPlayItem
     }
 

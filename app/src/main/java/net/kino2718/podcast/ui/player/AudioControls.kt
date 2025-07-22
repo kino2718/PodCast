@@ -12,10 +12,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
 import androidx.media3.common.Player
 import net.kino2718.podcast.R
+import net.kino2718.podcast.ui.player.SpeedSelector
 
 @Composable
 internal fun AudioControls(
     player: Player,
+    speed: Float,
+    onSpeedChange: (Float) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -33,5 +36,6 @@ internal fun AudioControls(
         SeekBackButton(player, buttonModifier)
         PlayPauseButton(player, buttonModifier)
         SeekForwardButton(player, buttonModifier)
+        SpeedSelector(speed = speed, onSpeedChange = onSpeedChange)
     }
 }

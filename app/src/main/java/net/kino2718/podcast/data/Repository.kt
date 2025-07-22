@@ -19,22 +19,23 @@ class Repository(context: Context) {
         podCastDao.updateLastUpdate(id, lastUpdate)
 
     suspend fun upsertPlayItem(playItem: PlayItem): PlayItem = podCastDao.upsertPlayItem(playItem)
-    suspend fun setCurrentPlayItem(playItem: PlayItem): PlayItem {
-        // 登録を全て消し１つのみ登録する様にする。
-        deleteAllPlayItem()
-        return podCastDao.upsertCurrentPlayItem(playItem)
+    suspend fun setCurrentPlayItem(playItem: PlayItem): PlayItem =
+        podCastDao.upsertCurrentPlayItem(playItem)
+
+    suspend fun clearCurrentPlayItem() {
+        if (podCastDao.getAppStates() != null) {
+            podCastDao.clearCurrentItemIds()
+        }
     }
 
-    suspend fun clearCurrentPlayItem() = deleteAllPlayItem()
-
     suspend fun addToPlaylist(playItem: PlayItem) = podCastDao.addToPlaylist(playItem)
-    private suspend fun deleteAllPlayItem() = podCastDao.deleteAllPlayItems()
     suspend fun getChannelById(id: Long) = podCastDao.getChannelById(id)
     fun getChannelByIdFlow(id: Long) = podCastDao.getChannelByIdFlow(id)
     suspend fun getEpisodeById(id: Long) = podCastDao.getEpisodeById(id)
     fun getEpisodeByIdFlow(id: Long) = podCastDao.getEpisodeByIdFlow(id).distinctUntilChanged()
-    fun getLastPlayedItemIdFlow() = podCastDao.getLastPlayedItemIdFlow()
-    suspend fun getLastPlayedItemId() = podCastDao.getLastPlayedItemId()
+    fun getAppStatesFlow() = podCastDao.getAppStatesFlow()
+    suspend fun getAppStates() = podCastDao.getAppStates()
+    suspend fun updateSpeed(speed: Float) = podCastDao.updateSpeed(speed)
 
     suspend fun updatePlaybackInfos(
         id: Long, position: Long, duration: Long, completed: Boolean, lastPlayed: Instant
