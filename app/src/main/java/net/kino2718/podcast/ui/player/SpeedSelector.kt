@@ -25,13 +25,16 @@ fun SpeedSelector(
     modifier: Modifier = Modifier,
 ) {
     val expanded = remember { mutableStateOf(false) }
-    val speeds = listOf(0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f)
+    val speeds = listOf(2.0f, 1.75f, 1.5f, 1.25f, 1.0f, 0.75f, 0.5f)
 
     Box(
         modifier = modifier
             .background(Color.Gray.copy(alpha = 0.1f), CircleShape)
             .clickable { expanded.value = true }
-            .padding(horizontal = dimensionResource(R.dimen.padding_small), vertical = dimensionResource(R.dimen.padding_extra_small)),
+            .padding(
+                horizontal = dimensionResource(R.dimen.padding_small),
+                vertical = dimensionResource(R.dimen.padding_extra_small)
+            ),
         contentAlignment = Alignment.Center
     ) {
         Text(text = "${speed}x", style = MaterialTheme.typography.labelLarge)
