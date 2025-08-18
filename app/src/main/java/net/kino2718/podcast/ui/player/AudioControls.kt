@@ -14,7 +14,7 @@ import androidx.media3.common.Player
 import net.kino2718.podcast.R
 
 @Composable
-internal fun AudioControls(
+fun AudioControls(
     player: Player,
     speed: Float,
     onSpeedChange: (Float) -> Unit,
