@@ -8,7 +8,7 @@ plugins {
 
 android {
     namespace = "net.kino2718.podcast"
-    compileSdk = 35
+    compileSdk = 36
 
     buildFeatures {
         buildConfig = true
