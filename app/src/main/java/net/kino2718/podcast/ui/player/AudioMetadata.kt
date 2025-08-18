@@ -123,7 +123,7 @@ fun AudioMetadata(
                 progress = progress,
                 onTappedFraction = {
                     // tap位置にseekする。
-                    val newPos = (duration * it).toLong()
+                    val newPos = (positionState.playbackPosition.duration * it).toLong()
                         .coerceAtLeast(0L).coerceAtMost(duration - 100L)
                     player.seekTo(newPos)
                 },
@@ -172,3 +172,6 @@ private fun seekBySwipe(player: Player, amount: Float) {
         .coerceAtMost(player.duration - 100L).coerceAtLeast(0L)
     player.seekTo(newPosition)
 }
+
+@Suppress("unused")
+private const val TAG = "AudioMetadata"
