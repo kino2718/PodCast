@@ -1,8 +1,13 @@
 package net.kino2718.podcast.ui.utils
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import net.kino2718.podcast.data.Episode
 import net.kino2718.podcast.data.MutableEpisode
 import net.kino2718.podcast.data.MutablePChannel
+import net.kino2718.podcast.data.PChannel
 import net.kino2718.podcast.data.PodCast
 import net.kino2718.podcast.utils.MyLog
 import okhttp3.OkHttpClient
@@ -10,6 +15,28 @@ import okhttp3.Request
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserFactory
 import java.io.StringReader
+
+// subscribeしているPodCastのrssを読みrssData:PodCastのリストを作成する。
+// 頻繁にネットにアクセスするのを避けるために一度読んだrss dataはキャッシュする。
+// キャッシュがクリアされるのはこのHomeViewModelオブジェクトが破棄される時。
+private val rssDataCache = mutableMapOf<String, PodCast>()
+private val rssDataMutexes = mutableMapOf<String, Mutex>()
+
+suspend fun getRssData(channel: PChannel): PodCast? {
+    return rssDataCache[channel.feedUrl] ?: run {
+        withContext(Dispatchers.IO) {
+            val mutex = rssDataMutexes[channel.feedUrl] ?: Mutex().also {
+                rssDataMutexes[channel.feedUrl] = it
+            }
+            mutex.withLock {
+                loadRss(channel.feedUrl)?.let { rssData ->
+                    rssDataCache[channel.feedUrl] = rssData
+                    rssData
+                }
+            }
+        }
+    }
+}
 
 fun loadRss(feedUrl: String): PodCast? {
     val client = OkHttpClient()

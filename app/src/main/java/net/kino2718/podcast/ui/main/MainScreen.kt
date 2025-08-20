@@ -25,6 +25,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import net.kino2718.podcast.R
+import net.kino2718.podcast.ui.all_episodes.AllEpisodesScreen
 import net.kino2718.podcast.ui.player.AudioPlayer
 import net.kino2718.podcast.ui.podcast.PodCastScreen
 import net.kino2718.podcast.ui.start.StartScreen
@@ -90,12 +91,22 @@ fun MainScreen(
                     selectItems = viewModel::setPlayItems,
                     addToPlaylist = viewModel::addToPlaylist,
                     download = viewModel::download,
+                    showAllEpisodes = {
+                        navController.navigate(AllEpisodesDestination)
+                    }
                 )
             }
             composable<PodCastDestination> { navBackStackEntry ->
                 val podCastDestination = navBackStackEntry.toRoute<PodCastDestination>()
                 PodCastScreen(
                     podCastDestination.feedUrl,
+                    selectPlayItem = viewModel::setPlayItem,
+                    addToPlaylist = viewModel::addToPlaylist,
+                    download = viewModel::download,
+                )
+            }
+            composable<AllEpisodesDestination> {
+                AllEpisodesScreen(
                     selectPlayItem = viewModel::setPlayItem,
                     addToPlaylist = viewModel::addToPlaylist,
                     download = viewModel::download,

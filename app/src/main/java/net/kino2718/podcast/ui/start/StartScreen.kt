@@ -17,14 +17,16 @@ fun StartScreen(
     selectItems: (List<PlayItem>, Int) -> Unit,
     addToPlaylist: (PlayItem) -> Unit,
     download: (PlayItem) -> Unit,
+    showAllEpisodes: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     when (navItem) {
         NavItem.HOME -> HomeScreen(
-            select = selectFeedUrl,
+            selectFeedUrl = selectFeedUrl,
             selectItem = selectItem,
             addToPlaylist = addToPlaylist,
             download = download,
+            showAllEpisodes = showAllEpisodes,
             modifier = modifier,
         )
 

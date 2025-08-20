@@ -3,7 +3,6 @@ package net.kino2718.podcast.ui.home
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
@@ -12,14 +11,9 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
-import net.kino2718.podcast.data.PChannel
 import net.kino2718.podcast.data.PlayItem
-import net.kino2718.podcast.data.PodCast
 import net.kino2718.podcast.data.Repository
-import net.kino2718.podcast.ui.utils.loadRss
+import net.kino2718.podcast.ui.utils.getRssData
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
@@ -31,28 +25,6 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     // 最近再生したPlay Item
     val recentPlaysFlow = repo.getRecentPlaysFlow(NUM_RECENT_PLAYS)
         .stateIn(viewModelScope, SharingStarted.Lazily, listOf())
-
-    // subscribeしているPodCastのrssを読みrssData:PodCastのリストを作成する。
-    // 頻繁にネットにアクセスするのを避けるために一度読んだrss dataはキャッシュする。
-    // キャッシュがクリアされるのはこのHomeViewModelオブジェクトが破棄される時。
-    private val rssDataCache = mutableMapOf<String, PodCast>()
-    private val rssDataMutexes = mutableMapOf<String, Mutex>()
-
-    private suspend fun getRssData(channel: PChannel): PodCast? {
-        return rssDataCache[channel.feedUrl] ?: run {
-            withContext(Dispatchers.IO) {
-                val mutex = rssDataMutexes[channel.feedUrl] ?: Mutex().also {
-                    rssDataMutexes[channel.feedUrl] = it
-                }
-                mutex.withLock {
-                    loadRss(channel.feedUrl)?.let { rssData ->
-                        rssDataCache[channel.feedUrl] = rssData
-                        rssData
-                    }
-                }
-            }
-        }
-    }
 
     init {
         viewModelScope.launch {
@@ -131,7 +103,6 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
                 )
             }
         }
-
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)

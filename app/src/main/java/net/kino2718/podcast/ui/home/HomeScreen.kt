@@ -26,6 +26,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -50,10 +51,11 @@ import net.kino2718.podcast.ui.utils.toHttps
 
 @Composable
 fun HomeScreen(
-    select: (String) -> Unit,
+    selectFeedUrl: (String) -> Unit,
     selectItem: (PlayItem) -> Unit,
     addToPlaylist: (PlayItem) -> Unit,
     download: (PlayItem) -> Unit,
+    showAllEpisodes: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = viewModel()
 ) {
@@ -72,7 +74,7 @@ fun HomeScreen(
     ) {
         MySubscriptions(
             title = stringResource(R.string.title_my_subscriptions),
-            selectFeedUrl = { select(it) },
+            selectFeedUrl = { selectFeedUrl(it) },
             subscribed = subscribed,
         )
 
@@ -100,6 +102,14 @@ fun HomeScreen(
             addToPlaylist = addToPlaylist,
             download = download,
         )
+        TextButton(
+            onClick = showAllEpisodes,
+            modifier = modifier.align(Alignment.CenterHorizontally)
+        ) {
+            Text(
+                text = stringResource(R.string.show_all_episodes)
+            )
+        }
     }
 }
 

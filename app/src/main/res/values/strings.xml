@@ -12,6 +12,7 @@
     <string name="playlist">Playlist</string>
     <string name="last_played">Last Played</string>
     <string name="search_episodes">Search Episodes</string>
+    <string name="show_all_episodes">Show All Episodes</string>
 
     <!-- player -->
     <string name="play_pause_button_play" translatable="false">Play</string>
