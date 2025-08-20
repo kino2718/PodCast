@@ -15,6 +15,7 @@ import okhttp3.Request
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserFactory
 import java.io.StringReader
+import java.util.concurrent.TimeUnit
 
 // subscribeしているPodCastのrssを読みrssData:PodCastのリストを作成する。
 // 頻繁にネットにアクセスするのを避けるために一度読んだrss dataはキャッシュする。
@@ -38,8 +39,15 @@ suspend fun getRssData(channel: PChannel): PodCast? {
     }
 }
 
+private const val TIME_OUT = 30L // sec
+
 fun loadRss(feedUrl: String): PodCast? {
-    val client = OkHttpClient()
+    // OkHttpクライアント
+    val client = OkHttpClient.Builder()
+        .connectTimeout(TIME_OUT, TimeUnit.SECONDS)  // 接続タイムアウト
+        .readTimeout(TIME_OUT, TimeUnit.SECONDS)     // 読み取りタイムアウト
+        .writeTimeout(TIME_OUT, TimeUnit.SECONDS)    // 書き込みタイムアウト
+        .build()
     val request = Request.Builder().url(feedUrl).build()
     val response = try {
         client.newCall(request).execute()
