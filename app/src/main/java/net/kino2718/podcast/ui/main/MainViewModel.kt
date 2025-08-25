@@ -37,6 +37,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.time.Instant
+import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 import kotlin.math.max
 
@@ -265,7 +266,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun downloadFile(url: String, destFile: File): Boolean {
-        val client = OkHttpClient()
+        val client = OkHttpClient.Builder()
+            .connectTimeout(TIME_OUT, TimeUnit.SECONDS)  // 接続タイムアウト
+            .readTimeout(TIME_OUT, TimeUnit.SECONDS)     // 読み取りタイムアウト
+            .writeTimeout(TIME_OUT, TimeUnit.SECONDS)    // 書き込みタイムアウト
+            .build()
 
         val request = Request.Builder()
             .url(url)
@@ -370,5 +375,6 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     companion object {
         private const val TAG = "MainViewModel"
+        private const val TIME_OUT = 30L // sec
     }
 }

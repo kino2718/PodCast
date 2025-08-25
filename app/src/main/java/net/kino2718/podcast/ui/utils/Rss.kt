@@ -55,7 +55,7 @@ fun loadRss(feedUrl: String): PodCast? {
         MyLog.e(TAG, "load error: $e")
         null
     }
-    return response?.let { r ->
+    return response?.use { r ->
         if (r.isSuccessful) {
             r.body.string().let { xml ->
                 parse(xml, feedUrl)?.let { podCast ->

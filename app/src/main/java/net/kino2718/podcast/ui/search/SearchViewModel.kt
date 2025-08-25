@@ -15,6 +15,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
 import java.net.URLEncoder
+import java.util.concurrent.TimeUnit
 
 data class PodcastState(
     val collectionName: String,
@@ -39,7 +40,11 @@ class SearchViewModel(app: Application) : AndroidViewModel(app) {
         if (keyword.isBlank()) return
 
         viewModelScope.launch(Dispatchers.IO) {
-            val client = OkHttpClient()
+            val client = OkHttpClient.Builder()
+                .connectTimeout(TIME_OUT, TimeUnit.SECONDS)  // 接続タイムアウト
+                .readTimeout(TIME_OUT, TimeUnit.SECONDS)     // 読み取りタイムアウト
+                .writeTimeout(TIME_OUT, TimeUnit.SECONDS)    // 書き込みタイムアウト
+                .build()
             val encoded = URLEncoder.encode(keyword, "UTF-8")
             val request = Request.Builder()
                 .url("https://itunes.apple.com/search?media=podcast&term=$encoded")
@@ -50,10 +55,10 @@ class SearchViewModel(app: Application) : AndroidViewModel(app) {
                 MyLog.e(TAG, "searchPodcasts error: $e")
                 null
             }
-            response?.let { r ->
+            response?.use { r ->
                 if (r.isSuccessful) {
                     val body = r.body
-                    body?.let { b ->
+                    body.let { b ->
                         val json = JSONObject(b.string())
                         val results = json.getJSONArray("results")
                         val spsList = List(results.length()) { i ->
@@ -76,5 +81,6 @@ class SearchViewModel(app: Application) : AndroidViewModel(app) {
 
     companion object {
         private const val TAG = "SearchViewModel"
+        private const val TIME_OUT = 30L // sec
     }
 }
