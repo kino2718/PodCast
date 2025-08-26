@@ -111,12 +111,17 @@ private fun EpisodeList(
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(modifier = modifier.fillMaxSize()) {
-        itemsIndexed(playlistUIStates) { i, playlistUIState ->
+        itemsIndexed(
+            items = playlistUIStates,
+            key = { _, playlistUIState ->
+                playlistUIState.playlistItem.id
+            }) { i, playlistUIState ->
             Episode(
                 playlistUIState = playlistUIState,
                 selectItem = { selectItems(playlistUIStates.map { it.playItem }, i) },
                 download = download,
                 deleteItem = deleteItem,
+                modifier = Modifier.animateItem(),
             )
         }
     }
