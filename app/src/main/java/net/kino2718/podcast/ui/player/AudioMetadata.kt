@@ -124,7 +124,8 @@ fun AudioMetadata(
                 onTappedFraction = {
                     // tap位置にseekする。
                     val newPos = (positionState.playbackPosition.duration * it).toLong()
-                        .coerceAtLeast(0L).coerceAtMost(duration - 100L)
+                        .coerceAtLeast(0L)
+                        .coerceAtMost(positionState.playbackPosition.duration - 100L)
                     player.seekTo(newPos)
                 },
                 modifier = Modifier.fillMaxWidth(),
