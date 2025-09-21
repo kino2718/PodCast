@@ -124,7 +124,7 @@ interface PodCastDao {
 
     @Query(
         "select * from Episode " +
-                "where (lastPlayed is not null) and (isPlaybackCompleted = false) " +
+                "where lastPlayed is not null " +
                 "order by lastPlayed desc limit :limits"
     )
     fun getRecentEpisodesFlow(limits: Int): Flow<List<Episode>>
