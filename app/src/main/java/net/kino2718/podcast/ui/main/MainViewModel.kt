@@ -313,7 +313,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             val startEpisode = playItemList[startIndex].episode
             _audioPlayerFlow.value?.let { player ->
                 // posの値はdurationよりある程度小さくしないとExoPlayerから返ってくるdurationの値が異常に小さくなる
-                val pos = startEpisode.playbackPosition.coerceIn(
+                val pos = if (startEpisode.isPlaybackCompleted) 0L
+                else startEpisode.playbackPosition.coerceIn(
                     0L, max(0L, startEpisode.duration - 100L)
                 )
                 val mediaItemList = playItemList.mapIndexed { i, playItem ->
