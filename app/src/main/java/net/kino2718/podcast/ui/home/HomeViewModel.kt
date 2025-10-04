@@ -36,7 +36,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
 
     private suspend fun updateLastUpdate() {
         repo.subscribedChannels().map { channel ->
-            getRssData(channel)?.let { rssData ->
+            getRssData(channel.feedUrl)?.let { rssData ->
                 rssData.channel.lastUpdate?.let { lastUpdate ->
                     repo.updateLastUpdate(channel.id, lastUpdate)
                 }
@@ -48,7 +48,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     private val nextPlayItemsRssFlow = repo.getLastPlayedItemFlow().transform { lastPlayedItems ->
         val nextPlayItemList = mutableListOf<PlayItem>()
         lastPlayedItems.map { lastPlayedItem ->
-            getRssData(lastPlayedItem.channel)?.let { rssData ->
+            getRssData(lastPlayedItem.channel.feedUrl)?.let { rssData ->
                 // podCastの中から最後に聴いたepisodeのlist中のidを取得
                 val index =
                     rssData.episodeList.indexOfFirst { it.guid == lastPlayedItem.episode.guid }
@@ -78,7 +78,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         val latestPlayItemList = mutableListOf<PlayItem>()
         channels.map { channel ->
             // このchannelのrss dataを取得
-            getRssData(channel)?.let { rssData -> // channelのrss data
+            getRssData(channel.feedUrl)?.let { rssData -> // channelのrss data
                 val candidateEpisodes = rssData.episodeList
                 val now = Instant.now()
                 candidateEpisodes

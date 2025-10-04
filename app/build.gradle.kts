@@ -17,9 +17,9 @@ android {
     defaultConfig {
         applicationId = "net.kino2718.podcast"
         minSdk = 34
-        targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        targetSdk = 36
+        versionCode = 2
+        versionName = "1.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

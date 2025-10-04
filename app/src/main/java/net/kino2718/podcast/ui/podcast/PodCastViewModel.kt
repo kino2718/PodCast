@@ -16,7 +16,7 @@ import kotlinx.coroutines.launch
 import net.kino2718.podcast.data.PChannel
 import net.kino2718.podcast.data.PodCast
 import net.kino2718.podcast.data.Repository
-import net.kino2718.podcast.ui.utils.loadRss
+import net.kino2718.podcast.ui.utils.getRssData
 
 data class PodCastUIState(
     val podCast: PodCast,
@@ -80,7 +80,7 @@ class PodCastViewModel(app: Application) : AndroidViewModel(app) {
     // Urlからrssを読み解析してPodCastオブジェクトを作成してflowに流す。
     fun load(feedUrl: String) {
         viewModelScope.launch(Dispatchers.IO) {
-            loadRss(feedUrl)?.let { podCastFlowFromRss.emit(it) }
+            getRssData(feedUrl)?.let { podCastFlowFromRss.emit(it) }
         }
     }
 

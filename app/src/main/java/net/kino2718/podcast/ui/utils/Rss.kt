@@ -7,7 +7,6 @@ import kotlinx.coroutines.withContext
 import net.kino2718.podcast.data.Episode
 import net.kino2718.podcast.data.MutableEpisode
 import net.kino2718.podcast.data.MutablePChannel
-import net.kino2718.podcast.data.PChannel
 import net.kino2718.podcast.data.PodCast
 import net.kino2718.podcast.utils.MyLog
 import okhttp3.OkHttpClient
@@ -23,15 +22,16 @@ import java.util.concurrent.TimeUnit
 private val rssDataCache = mutableMapOf<String, PodCast>()
 private val rssDataMutexes = mutableMapOf<String, Mutex>()
 
-suspend fun getRssData(channel: PChannel): PodCast? {
-    return rssDataCache[channel.feedUrl] ?: run {
-        withContext(Dispatchers.IO) {
-            val mutex = rssDataMutexes[channel.feedUrl] ?: Mutex().also {
-                rssDataMutexes[channel.feedUrl] = it
-            }
-            mutex.withLock {
-                loadRss(channel.feedUrl)?.let { rssData ->
-                    rssDataCache[channel.feedUrl] = rssData
+suspend fun getRssData(feedUrl: String): PodCast? {
+    return withContext(Dispatchers.IO) { // ネットアクセスは時間がかかるためIO threadで行う
+        // 複数からrss data要求を受けるのでネットワークアクセスが重複しないようmutexで排他制御する
+        val mutex = rssDataMutexes[feedUrl] ?: Mutex().also {
+            rssDataMutexes[feedUrl] = it
+        }
+        mutex.withLock {
+            rssDataCache[feedUrl] ?: run {
+                loadRss(feedUrl)?.let { rssData ->
+                    rssDataCache[feedUrl] = rssData
                     rssData
                 }
             }
@@ -41,7 +41,7 @@ suspend fun getRssData(channel: PChannel): PodCast? {
 
 private const val TIME_OUT = 30L // sec
 
-fun loadRss(feedUrl: String): PodCast? {
+private fun loadRss(feedUrl: String): PodCast? {
     // OkHttpクライアント
     val client = OkHttpClient.Builder()
         .connectTimeout(TIME_OUT, TimeUnit.SECONDS)  // 接続タイムアウト

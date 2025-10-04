@@ -32,7 +32,7 @@ class AllEpisodesViewModel(app: Application) : AndroidViewModel(app) {
             val ascendingOrder = pair.second
             val allPlayItemList = mutableListOf<PlayItem>()
             channels.map { channel ->
-                getRssData(channel)?.let { rssData ->
+                getRssData(channel.feedUrl)?.let { rssData ->
                     rssData.episodeList
                         .forEach {
                             allPlayItemList.add(
