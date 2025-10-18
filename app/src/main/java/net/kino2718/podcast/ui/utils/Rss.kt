@@ -23,16 +23,20 @@ private val rssDataCache = mutableMapOf<String, PodCast>()
 private val rssDataMutexes = mutableMapOf<String, Mutex>()
 
 suspend fun getRssData(feedUrl: String): PodCast? {
-    return withContext(Dispatchers.IO) { // ネットアクセスは時間がかかるためIO threadで行う
-        // 複数からrss data要求を受けるのでネットワークアクセスが重複しないようmutexで排他制御する
-        val mutex = rssDataMutexes[feedUrl] ?: Mutex().also {
-            rssDataMutexes[feedUrl] = it
-        }
-        mutex.withLock {
-            rssDataCache[feedUrl] ?: run {
-                loadRss(feedUrl)?.let { rssData ->
-                    rssDataCache[feedUrl] = rssData
-                    rssData
+    return rssDataCache[feedUrl] ?: run { // 既にキャッシュされていればそれを返す
+        // キャッシュされていない場合
+        withContext(Dispatchers.IO) { // ネットアクセスは時間がかかるためIO threadで行う
+            // 複数からrss data要求を受けるのでネットワークアクセスが重複しないようmutexで排他制御する
+            val mutex = rssDataMutexes[feedUrl] ?: Mutex().also {
+                rssDataMutexes[feedUrl] = it
+            }
+            mutex.withLock {
+                rssDataCache[feedUrl] ?: run { // mutexを待っている間にキャッシュされていればそれを返す
+                    // キャッシュされていない場合
+                    loadRss(feedUrl)?.let { rssData ->
+                        rssDataCache[feedUrl] = rssData
+                        rssData
+                    }
                 }
             }
         }
