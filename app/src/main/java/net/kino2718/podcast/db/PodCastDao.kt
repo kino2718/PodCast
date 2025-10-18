@@ -237,10 +237,17 @@ interface PodCastDao {
     fun getLastPlayedEpisodeByIdFlow(channelId: Long): Flow<Episode?>
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    fun getLastPlayedItemFlow(): Flow<List<PlayItem>> {
+    fun getLastPlayedItemWithoutPlaybackPositionFlow(): Flow<List<PlayItem>> {
         return subscribedChannelsFlow().flatMapLatest { channels ->
             val flows = channels.map { channel ->
                 getLastPlayedEpisodeByIdFlow(channel.id)
+                    .map { episode -> // Home画面のNext Episodesのちらつき対策
+                        episode?.copy(
+                            playbackPosition = 0,
+                            isPlaybackCompleted = false,
+                            lastPlayed = null
+                        )
+                    }
                     .distinctUntilChanged()
                     .map { episode ->
                         episode?.let { PlayItem(channel = channel, episode = it) }

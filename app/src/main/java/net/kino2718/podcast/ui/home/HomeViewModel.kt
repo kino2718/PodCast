@@ -45,29 +45,30 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     // next episodes
-    private val nextPlayItemsRssFlow = repo.getLastPlayedItemFlow().transform { lastPlayedItems ->
-        val nextPlayItemList = mutableListOf<PlayItem>()
-        lastPlayedItems.map { lastPlayedItem ->
-            getRssData(lastPlayedItem.channel.feedUrl)?.let { rssData ->
-                // podCastの中から最後に聴いたepisodeのlist中のidを取得
-                val index =
-                    rssData.episodeList.indexOfFirst { it.guid == lastPlayedItem.episode.guid }
-                // 見つからない(index == -1)場合は何もしない。先頭なら最後に聴いたのが最新なので何もしない。
-                // そうでないなら次に聴くepisodeとしてリストアップする。
-                if (0 < index) {
-                    val nextEpisodeRss = rssData.episodeList[index - 1]
-                    nextPlayItemList.add(
-                        PlayItem(
-                            channel = lastPlayedItem.channel,
-                            episode = nextEpisodeRss
+    private val nextPlayItemsRssFlow =
+        repo.getLastPlayedItemWithoutPlaybackPositionFlow().transform { lastPlayedItems ->
+            val nextPlayItemList = mutableListOf<PlayItem>()
+            lastPlayedItems.map { lastPlayedItem ->
+                getRssData(lastPlayedItem.channel.feedUrl)?.let { rssData ->
+                    // podCastの中から最後に聴いたepisodeのlist中のidを取得
+                    val index =
+                        rssData.episodeList.indexOfFirst { it.guid == lastPlayedItem.episode.guid }
+                    // 見つからない(index == -1)場合は何もしない。先頭なら最後に聴いたのが最新なので何もしない。
+                    // そうでないなら次に聴くepisodeとしてリストアップする。
+                    if (0 < index) {
+                        val nextEpisodeRss = rssData.episodeList[index - 1]
+                        nextPlayItemList.add(
+                            PlayItem(
+                                channel = lastPlayedItem.channel,
+                                episode = nextEpisodeRss
+                            )
                         )
-                    )
-                    // rss処理に時間がかかるので途中経過も表示する。
-                    emit(nextPlayItemList.toList())
+                        // rss処理に時間がかかるので途中経過も表示する。
+                        emit(nextPlayItemList.toList())
+                    }
                 }
             }
         }
-    }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val nextPlayItemsFlow = changeEpisodesIfExist(nextPlayItemsRssFlow)

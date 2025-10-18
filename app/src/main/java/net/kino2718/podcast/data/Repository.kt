@@ -50,7 +50,8 @@ class Repository(context: Context) {
     suspend fun subscribedChannels() = podCastDao.subscribedChannels()
     fun subscribedChannelsFlow() = podCastDao.subscribedChannelsFlow()
     fun getRecentPlaysFlow(limits: Int) = podCastDao.getRecentPlaysFlow(limits)
-    fun getLastPlayedItemFlow() = podCastDao.getLastPlayedItemFlow()
+    fun getLastPlayedItemWithoutPlaybackPositionFlow() =
+        podCastDao.getLastPlayedItemWithoutPlaybackPositionFlow()
 
     fun getPlaylistItemsFlow() = podCastDao.getPlaylistItemsFlow().distinctUntilChanged()
     suspend fun getPlaylistItems() = podCastDao.getPlaylistItems()
