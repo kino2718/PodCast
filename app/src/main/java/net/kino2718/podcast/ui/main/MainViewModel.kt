@@ -2,6 +2,7 @@ package net.kino2718.podcast.ui.main
 
 import android.app.Application
 import android.content.ComponentName
+import android.widget.Toast
 import androidx.core.net.toUri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -23,6 +24,7 @@ import kotlinx.coroutines.guava.await
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import net.kino2718.podcast.data.Episode
 import net.kino2718.podcast.data.PlayItem
 import net.kino2718.podcast.data.PlaylistItem
@@ -265,7 +267,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    private fun downloadFile(url: String, destFile: File): Boolean {
+    private suspend fun downloadFile(url: String, destFile: File): Boolean {
         val client = OkHttpClient.Builder()
             .connectTimeout(TIME_OUT, TimeUnit.SECONDS)  // 接続タイムアウト
             .readTimeout(TIME_OUT, TimeUnit.SECONDS)     // 読み取りタイムアウト
@@ -276,14 +278,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             .url(url)
             .build()
 
-        client.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) {
-                MyLog.e(TAG, "Failed to download file: ${response.code}")
-                return false
-            }
+        try {
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    MyLog.e(TAG, "Failed to download file: ${response.code}")
+                    return false
+                }
 
-            val body = response.body
-            try {
+                val body = response.body
                 // バッファを使ってストリームから直接読み込み、ファイルへ書き出す
                 body.byteStream().use { input ->
                     FileOutputStream(destFile).use { output ->
@@ -295,10 +297,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     }
                 }
                 return true
-            } catch (e: IOException) {
-                MyLog.e(TAG, "Error saving file: ${e.message}")
-                return false
             }
+        } catch (e: IOException) {
+            val message = "Error downloadFile file: ${e.message}"
+            withContext(Dispatchers.Main) {
+                Toast.makeText(appContext, message, Toast.LENGTH_LONG).show()
+            }
+            MyLog.e(TAG, message)
+            return false
         }
     }
 
