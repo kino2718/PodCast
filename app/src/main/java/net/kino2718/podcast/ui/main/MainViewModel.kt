@@ -308,6 +308,13 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun showInfo(playItem: PlayItem, callback: (PlayItem) -> Unit) {
+        viewModelScope.launch {
+            val pi = repo.upsertPlayItem(playItem)
+            callback(pi)
+        }
+    }
+
     private var currentPlayItemIndex = -1
     private var currentPlayItemList: List<PlayItem>? = null
 

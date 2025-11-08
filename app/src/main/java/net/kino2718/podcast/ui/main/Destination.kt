@@ -10,3 +10,6 @@ data class PodCastDestination(val feedUrl: String)
 
 @Serializable
 object AllEpisodesDestination
+
+@Serializable
+data class EpisodeInfoDestination(val episodeId: Long)

@@ -1,4 +1,4 @@
-package net.kino2718.podcast.ui.common
+package net.kino2718.podcast.ui.episode
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.FileDownloadDone
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -60,6 +61,7 @@ fun EpisodeListComposable(
     selectEpisode: (Episode, Int) -> Unit,
     addToPlaylist: (Episode, Int) -> Unit,
     download: (Episode, Int) -> Unit,
+    showInfo: (Episode, Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -95,8 +97,7 @@ fun EpisodeListComposable(
                         searchFrom = 0
                         oldQuery = query
                     }
-                    val episodes = episodeList
-                    val offset = episodes.subList(searchFrom, episodes.size).indexOfFirst {
+                    val offset = episodeList.subList(searchFrom, episodeList.size).indexOfFirst {
                         it.title.contains(query, ignoreCase = true)
                     }
                     if (offset < 0) searchFrom = 0 // 見つからなかった
@@ -119,6 +120,7 @@ fun EpisodeListComposable(
             selectEpisode = selectEpisode,
             addToPlaylist = addToPlaylist,
             download = download,
+            showInfo = showInfo,
         )
     }
 }
@@ -202,6 +204,7 @@ private fun EpisodeList(
     selectEpisode: (Episode, Int) -> Unit,
     addToPlaylist: (Episode, Int) -> Unit,
     download: (Episode, Int) -> Unit,
+    showInfo: (Episode, Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -216,6 +219,7 @@ private fun EpisodeList(
                 selectEpisode = { selectEpisode(it, i) },
                 addToPlayList = { addToPlaylist(it, i) },
                 download = { download(it, i) },
+                showInfo = { showInfo(it, i) }
             )
         }
     }
@@ -228,6 +232,7 @@ private fun Episode(
     selectEpisode: (Episode) -> Unit,
     addToPlayList: (Episode) -> Unit,
     download: (Episode) -> Unit,
+    showInfo: (Episode) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Card(
@@ -278,34 +283,49 @@ private fun Episode(
                     }
                 }
             }
-            // playlist
-            IconButton(
-                onClick = { addToPlayList(episode) },
-                modifier = Modifier.size(dimensionResource(R.dimen.icon_button_small)),
-                enabled = !inList,
-            ) {
-                val image = if (inList) Icons.AutoMirrored.Filled.PlaylistAddCheck
-                else Icons.AutoMirrored.Filled.PlaylistAdd
-                Icon(
-                    imageVector = image,
-                    contentDescription = null,
-                    modifier = Modifier.size(dimensionResource(R.dimen.icon_small)),
-                )
-            }
-            // download
-            val downloaded = episode.downloadFile != null
-            IconButton(
-                onClick = { download(episode) },
-                modifier = Modifier.size(dimensionResource(R.dimen.icon_button_small)),
-                enabled = !downloaded,
-            ) {
-                val image = if (downloaded) Icons.Default.FileDownloadDone
-                else Icons.Default.Download
-                Icon(
-                    imageVector = image,
-                    contentDescription = null,
-                    modifier = Modifier.size(dimensionResource(R.dimen.icon_small)),
-                )
+            Column {
+                Row {
+                    // playlist
+                    IconButton(
+                        onClick = { addToPlayList(episode) },
+                        modifier = Modifier.size(dimensionResource(R.dimen.icon_button_small)),
+                        enabled = !inList,
+                    ) {
+                        val image = if (inList) Icons.AutoMirrored.Filled.PlaylistAddCheck
+                        else Icons.AutoMirrored.Filled.PlaylistAdd
+                        Icon(
+                            imageVector = image,
+                            contentDescription = null,
+                            modifier = Modifier.size(dimensionResource(R.dimen.icon_small)),
+                        )
+                    }
+                    // download
+                    val downloaded = episode.downloadFile != null
+                    IconButton(
+                        onClick = { download(episode) },
+                        modifier = Modifier.size(dimensionResource(R.dimen.icon_button_small)),
+                        enabled = !downloaded,
+                    ) {
+                        val image = if (downloaded) Icons.Default.FileDownloadDone
+                        else Icons.Default.Download
+                        Icon(
+                            imageVector = image,
+                            contentDescription = null,
+                            modifier = Modifier.size(dimensionResource(R.dimen.icon_small)),
+                        )
+                    }
+                }
+                // episode info
+                IconButton(
+                    onClick = { showInfo(episode) },
+                    modifier = Modifier.size(dimensionResource(R.dimen.icon_button_small)),
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Info,
+                        contentDescription = null,
+                        modifier = Modifier.size(dimensionResource(R.dimen.icon_small))
+                    )
+                }
             }
         }
     }

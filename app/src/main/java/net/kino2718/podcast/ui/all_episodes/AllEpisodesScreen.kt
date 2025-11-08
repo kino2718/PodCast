@@ -12,13 +12,14 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import net.kino2718.podcast.R
 import net.kino2718.podcast.data.PlayItem
-import net.kino2718.podcast.ui.common.EpisodeListComposable
+import net.kino2718.podcast.ui.episode.EpisodeListComposable
 
 @Composable
 fun AllEpisodesScreen(
     selectPlayItem: (PlayItem) -> Unit,
     addToPlaylist: (PlayItem) -> Unit,
     download: (PlayItem) -> Unit,
+    showInfo: (PlayItem) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: AllEpisodesViewModel = viewModel()
 ) {
@@ -46,6 +47,9 @@ fun AllEpisodesScreen(
             },
             download = { _, i ->
                 allPlayItemList.getOrNull(i)?.let { download(it) }
+            },
+            showInfo = { _, i ->
+                allPlayItemList.getOrNull(i)?.let { showInfo(it) }
             },
         )
     }

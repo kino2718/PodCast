@@ -28,7 +28,7 @@ import coil.compose.AsyncImage
 import net.kino2718.podcast.R
 import net.kino2718.podcast.data.PChannel
 import net.kino2718.podcast.data.PlayItem
-import net.kino2718.podcast.ui.common.EpisodeListComposable
+import net.kino2718.podcast.ui.episode.EpisodeListComposable
 import net.kino2718.podcast.ui.utils.format
 import net.kino2718.podcast.ui.utils.fromHtml
 import net.kino2718.podcast.ui.utils.toHttps
@@ -39,6 +39,7 @@ fun PodCastScreen(
     selectPlayItem: (PlayItem) -> Unit,
     addToPlaylist: (PlayItem) -> Unit,
     download: (PlayItem) -> Unit,
+    showEpisodeInfo: (PlayItem) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: PodCastViewModel = viewModel()
 ) {
@@ -83,6 +84,12 @@ fun PodCastScreen(
                         download(playItem)
                     }
                 },
+                showInfo = { episode, _ ->
+                    uiState?.let { state ->
+                        val playItem = PlayItem(channel = state.podCast.channel, episode = episode)
+                        showEpisodeInfo(playItem)
+                    }
+                }
             )
         }
     }

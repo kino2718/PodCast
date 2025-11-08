@@ -26,9 +26,11 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import net.kino2718.podcast.R
 import net.kino2718.podcast.ui.all_episodes.AllEpisodesScreen
+import net.kino2718.podcast.ui.episode.EpisodeInfoScreen
 import net.kino2718.podcast.ui.player.AudioPlayer
 import net.kino2718.podcast.ui.podcast.PodCastScreen
 import net.kino2718.podcast.ui.start.StartScreen
+import net.kino2718.podcast.utils.MyLog
 
 @Composable
 fun MainScreen(
@@ -103,6 +105,13 @@ fun MainScreen(
                     selectPlayItem = viewModel::setPlayItem,
                     addToPlaylist = viewModel::addToPlaylist,
                     download = viewModel::download,
+                    showEpisodeInfo = { playItem ->
+                        viewModel.showInfo(playItem) {
+                            MyLog.d("MainScreen", "episodeId : ${it.episode.id}")
+                            val episodeInfoDestination = EpisodeInfoDestination(it.episode.id)
+                            navController.navigate(episodeInfoDestination)
+                        }
+                    }
                 )
             }
             composable<AllEpisodesDestination> {
@@ -110,7 +119,17 @@ fun MainScreen(
                     selectPlayItem = viewModel::setPlayItem,
                     addToPlaylist = viewModel::addToPlaylist,
                     download = viewModel::download,
+                    showInfo = { playItem ->
+                        viewModel.showInfo(playItem) {
+                            val episodeInfoDestination = EpisodeInfoDestination(it.episode.id)
+                            navController.navigate(episodeInfoDestination)
+                        }
+                    }
                 )
+            }
+            composable<EpisodeInfoDestination> { navBackStackEntry ->
+                val episodeInfoDestination = navBackStackEntry.toRoute<EpisodeInfoDestination>()
+                EpisodeInfoScreen(episodeId = episodeInfoDestination.episodeId)
             }
         }
     }
