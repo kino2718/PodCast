@@ -19,8 +19,8 @@ android {
         applicationId = "net.kino2718.podcast"
         minSdk = 34
         targetSdk = 36
-        versionCode = 4
-        versionName = "1.4"
+        versionCode = 5
+        versionName = "1.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
