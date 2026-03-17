@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.FileDownloadDone
 import androidx.compose.material.icons.filled.RemoveCircle
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -42,6 +43,7 @@ import net.kino2718.podcast.ui.utils.toHMS
 fun PlaylistScreen(
     selectItems: (List<PlayItem>, Int) -> Unit,
     download: (PlayItem) -> Unit,
+    showInfo: (PlayItem) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: PlaylistViewModel = viewModel(),
 ) {
@@ -62,7 +64,7 @@ fun PlaylistScreen(
 
         EpisodeList(
             playlistUIStates,
-            selectItems = { playItemList, i ->
+            selectItems = { _, i ->
                 scope.launch {
                     val newPlayItemList = viewModel.getPlayItemList()
                     selectItems(newPlayItemList, i)
@@ -70,6 +72,7 @@ fun PlaylistScreen(
             },
             download = { playlistUIState -> download(playlistUIState.playItem) },
             deleteItem = viewModel::deleteItem,
+            showInfo = { playlistUIState -> showInfo(playlistUIState.playItem) },
         )
     }
 }
@@ -108,6 +111,7 @@ private fun EpisodeList(
     selectItems: (List<PlayItem>, Int) -> Unit,
     download: (PlaylistUIState) -> Unit,
     deleteItem: (PlaylistUIState) -> Unit,
+    showInfo: (PlaylistUIState) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(modifier = modifier.fillMaxSize()) {
@@ -121,6 +125,7 @@ private fun EpisodeList(
                 selectItem = { selectItems(playlistUIStates.map { it.playItem }, i) },
                 download = download,
                 deleteItem = deleteItem,
+                showInfo = showInfo,
                 modifier = Modifier.animateItem(),
             )
         }
@@ -133,6 +138,7 @@ private fun Episode(
     selectItem: () -> Unit,
     download: (PlaylistUIState) -> Unit,
     deleteItem: (PlaylistUIState) -> Unit,
+    showInfo: (PlaylistUIState) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val channel = playlistUIState.playItem.channel
@@ -191,31 +197,46 @@ private fun Episode(
                     }
                 }
             }
-            // download
-            val downloaded = episode.downloadFile != null
-            IconButton(
-                onClick = { download(playlistUIState) },
-                modifier = Modifier.size(dimensionResource(R.dimen.icon_button_small)),
-                enabled = !downloaded,
-            ) {
-                val image =
-                    if (downloaded) Icons.Default.FileDownloadDone else Icons.Default.Download
-                Icon(
-                    imageVector = image,
-                    contentDescription = null,
-                    modifier = Modifier.size(dimensionResource(R.dimen.icon_small))
-                )
-            }
-            // delete
-            IconButton(
-                onClick = { deleteItem(playlistUIState) },
-                modifier = Modifier.size(dimensionResource(R.dimen.icon_button_small)),
-            ) {
-                Icon(
-                    imageVector = Icons.Default.RemoveCircle,
-                    contentDescription = null,
-                    modifier = Modifier.size(dimensionResource(R.dimen.icon_small))
-                )
+            Column {
+                Row {
+                    // download
+                    val downloaded = episode.downloadFile != null
+                    IconButton(
+                        onClick = { download(playlistUIState) },
+                        modifier = Modifier.size(dimensionResource(R.dimen.icon_button_small)),
+                        enabled = !downloaded,
+                    ) {
+                        val image =
+                            if (downloaded) Icons.Default.FileDownloadDone else Icons.Default.Download
+                        Icon(
+                            imageVector = image,
+                            contentDescription = null,
+                            modifier = Modifier.size(dimensionResource(R.dimen.icon_small))
+                        )
+                    }
+                    // delete
+                    IconButton(
+                        onClick = { deleteItem(playlistUIState) },
+                        modifier = Modifier.size(dimensionResource(R.dimen.icon_button_small)),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.RemoveCircle,
+                            contentDescription = null,
+                            modifier = Modifier.size(dimensionResource(R.dimen.icon_small))
+                        )
+                    }
+                }
+                // episode info
+                IconButton(
+                    onClick = { showInfo(playlistUIState) },
+                    modifier = Modifier.size(dimensionResource(R.dimen.icon_button_small)),
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Info,
+                        contentDescription = null,
+                        modifier = Modifier.size(dimensionResource(R.dimen.icon_small))
+                    )
+                }
             }
         }
     }

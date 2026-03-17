@@ -40,6 +40,7 @@ fun StartScreen(
         NavItem.PLAYLIST -> PlaylistScreen(
             selectItems = selectItems,
             download = download,
+            showInfo = showInfo,
         )
 
         NavItem.NOW_PLAYING -> NowPlayingScreen()
