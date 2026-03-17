@@ -17,6 +17,7 @@ fun StartScreen(
     selectItems: (List<PlayItem>, Int) -> Unit,
     addToPlaylist: (PlayItem) -> Unit,
     download: (PlayItem) -> Unit,
+    showInfo: (PlayItem) -> Unit,
     showAllEpisodes: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -26,6 +27,7 @@ fun StartScreen(
             selectItem = selectItem,
             addToPlaylist = addToPlaylist,
             download = download,
+            showInfo = showInfo,
             showAllEpisodes = showAllEpisodes,
             modifier = modifier,
         )

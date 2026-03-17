@@ -22,6 +22,7 @@ import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.automirrored.filled.PlaylistAddCheck
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.FileDownloadDone
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -55,6 +56,7 @@ fun HomeScreen(
     selectItem: (PlayItem) -> Unit,
     addToPlaylist: (PlayItem) -> Unit,
     download: (PlayItem) -> Unit,
+    showInfo: (PlayItem) -> Unit,
     showAllEpisodes: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = viewModel()
@@ -84,6 +86,7 @@ fun HomeScreen(
             playlistItems = playlistItems,
             selectItem = selectItem,
             addToPlaylist = addToPlaylist,
+            showInfo = showInfo,
             download = download,
         )
         ShowPlayItemList(
@@ -92,6 +95,7 @@ fun HomeScreen(
             playlistItems = playlistItems,
             selectItem = selectItem,
             addToPlaylist = addToPlaylist,
+            showInfo = showInfo,
             download = download,
         )
         ShowPlayItemList(
@@ -100,6 +104,7 @@ fun HomeScreen(
             playlistItems = playlistItems,
             selectItem = selectItem,
             addToPlaylist = addToPlaylist,
+            showInfo = showInfo,
             download = download,
         )
         TextButton(
@@ -155,6 +160,7 @@ private fun ShowPlayItemList(
     selectItem: (PlayItem) -> Unit,
     addToPlaylist: (PlayItem) -> Unit,
     download: (PlayItem) -> Unit,
+    showInfo: (PlayItem) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (playItemList.isNotEmpty()) {
@@ -226,35 +232,50 @@ private fun ShowPlayItemList(
                                         )
                                     }
                                 }
-                                // playlist
-                                IconButton(
-                                    onClick = { addToPlaylist(playItem) },
-                                    modifier = Modifier.size(dimensionResource(R.dimen.icon_button_small)),
-                                    enabled = !inList,
-                                ) {
-                                    val image =
-                                        if (inList) Icons.AutoMirrored.Filled.PlaylistAddCheck
-                                        else Icons.AutoMirrored.Filled.PlaylistAdd
-                                    Icon(
-                                        imageVector = image,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(dimensionResource(R.dimen.icon_small)),
-                                    )
-                                }
-                                // download
-                                val downloaded = playItem.episode.downloadFile != null
-                                IconButton(
-                                    onClick = { download(playItem) },
-                                    modifier = Modifier.size(dimensionResource(R.dimen.icon_button_small)),
-                                    enabled = !downloaded,
-                                ) {
-                                    val image =
-                                        if (downloaded) Icons.Default.FileDownloadDone else Icons.Default.Download
-                                    Icon(
-                                        imageVector = image,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(dimensionResource(R.dimen.icon_small)),
-                                    )
+                                Column {
+                                    Row {
+                                        // playlist
+                                        IconButton(
+                                            onClick = { addToPlaylist(playItem) },
+                                            modifier = Modifier.size(dimensionResource(R.dimen.icon_button_small)),
+                                            enabled = !inList,
+                                        ) {
+                                            val image =
+                                                if (inList) Icons.AutoMirrored.Filled.PlaylistAddCheck
+                                                else Icons.AutoMirrored.Filled.PlaylistAdd
+                                            Icon(
+                                                imageVector = image,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(dimensionResource(R.dimen.icon_small)),
+                                            )
+                                        }
+                                        // download
+                                        val downloaded = playItem.episode.downloadFile != null
+                                        IconButton(
+                                            onClick = { download(playItem) },
+                                            modifier = Modifier.size(dimensionResource(R.dimen.icon_button_small)),
+                                            enabled = !downloaded,
+                                        ) {
+                                            val image =
+                                                if (downloaded) Icons.Default.FileDownloadDone else Icons.Default.Download
+                                            Icon(
+                                                imageVector = image,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(dimensionResource(R.dimen.icon_small)),
+                                            )
+                                        }
+                                    }
+                                    // episode info
+                                    IconButton(
+                                        onClick = { showInfo(playItem) },
+                                        modifier = Modifier.size(dimensionResource(R.dimen.icon_button_small)),
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Outlined.Info,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(dimensionResource(R.dimen.icon_small))
+                                        )
+                                    }
                                 }
                             }
                         }

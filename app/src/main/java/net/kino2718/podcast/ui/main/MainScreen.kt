@@ -93,6 +93,12 @@ fun MainScreen(
                     selectItems = viewModel::setPlayItems,
                     addToPlaylist = viewModel::addToPlaylist,
                     download = viewModel::download,
+                    showInfo = { playItem ->
+                        viewModel.showInfo(playItem) {
+                            val episodeInfoDestination = EpisodeInfoDestination(it.episode.id)
+                            navController.navigate(episodeInfoDestination)
+                        }
+                    },
                     showAllEpisodes = {
                         navController.navigate(AllEpisodesDestination)
                     }
